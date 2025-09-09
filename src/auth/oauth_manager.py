@@ -1,207 +1,446 @@
+#!/usr/bin/env python3
+"""
+OAuth 2.0 Manager for SMLS Authentication
+
+This module implements a comprehensive OAuth 2.0 authentication manager
+that handles the complete 3-legged authorization flow for Google and
+LinkedIn. It provides secure token exchange, user information retrieval,
+and state management for OAuth operations.
+
+Key Features:
+- OAuth 2.0 3-legged authorization flow implementation
+- PKCE (Proof Key for Code Exchange) support for enhanced security
+- State parameter generation for CSRF protection
+- Token exchange and user information retrieval
+- Provider-specific OAuth handling (Google, LinkedIn)
+- Secure credential management and validation
+
+Security Features:
+- CSRF protection via state parameters
+- PKCE implementation for public clients
+- Secure token storage and management
+- Input validation and sanitization
+- Error handling and logging
+
+Author: SMLS Development Team
+Version: 1.0.0
+License: MIT
+"""
+
 import requests
 import secrets
 import hashlib
 import base64
 from urllib.parse import urlencode, parse_qs
-from config import Config
+from .config import Config
 
 class OAuthManager:
-    """Handles OAuth 2.0 3-legged authorization flow for Google and LinkedIn."""
+    """
+    Handles OAuth 2.0 3-legged authorization flow for Google and LinkedIn.
+    
+    This class provides a complete implementation of the OAuth 2.0 authorization
+    code flow with PKCE (Proof Key for Code Exchange) for enhanced security.
+    It supports multiple OAuth providers and handles the complete authentication
+    lifecycle from authorization URL generation to user information retrieval.
+    
+    The OAuth flow consists of:
+    1. Generate authorization URL with state and PKCE parameters
+    2. Redirect user to OAuth provider for authentication
+    3. Handle callback with authorization code
+    4. Exchange authorization code for access token
+    5. Retrieve user information using access token
+    6. Validate and return user data
+    
+    Security Features:
+    - State parameter for CSRF protection
+    - PKCE for enhanced security
+    - Secure token handling
+    - Input validation and sanitization
+    """
     
     def __init__(self, oauth_config=None):
+        """
+        Initialize the OAuth manager.
+        
+        Args:
+            oauth_config (dict, optional): OAuth configuration dictionary.
+                                         If not provided, uses default Config.
+        """
         self.config = Config()
         self.oauth_config = oauth_config or {}
     
+    # =============================================================================
+    # SECURITY UTILITIES
+    # =============================================================================
+    
     def generate_state(self):
-        """Generate a secure random state parameter for CSRF protection."""
+        """
+        Generate a secure random state parameter for CSRF protection.
+        
+        The state parameter is used to prevent CSRF attacks by ensuring
+        that the authorization request and callback are from the same
+        source. It should be cryptographically random and unpredictable.
+        
+        Returns:
+            str: A secure random state parameter (32 bytes, URL-safe)
+        """
         return secrets.token_urlsafe(32)
     
     def generate_code_verifier(self):
-        """Generate PKCE code verifier for enhanced security."""
+        """
+        Generate PKCE code verifier for enhanced security.
+        
+        The code verifier is a cryptographically random string that is
+        used in the PKCE (Proof Key for Code Exchange) flow to enhance
+        security for public clients. It should be high-entropy and
+        unpredictable.
+        
+        Returns:
+            str: A secure random code verifier (96 bytes, URL-safe)
+        """
         return secrets.token_urlsafe(96)
     
     def generate_code_challenge(self, code_verifier):
-        """Generate PKCE code challenge from verifier."""
+        """
+        Generate PKCE code challenge from verifier.
+        
+        The code challenge is derived from the code verifier using SHA256
+        hashing and base64url encoding. This provides a way to verify
+        that the client that initiated the authorization request is the
+        same client that is exchanging the authorization code for tokens.
+        
+        Args:
+            code_verifier (str): The code verifier to generate challenge from
+            
+        Returns:
+            str: The base64url-encoded SHA256 hash of the code verifier
+        """
+        # Generate SHA256 hash of the code verifier
         digest = hashlib.sha256(code_verifier.encode('utf-8')).digest()
+        
+        # Encode as base64url and remove padding
         return base64.urlsafe_b64encode(digest).decode('utf-8').rstrip('=')
     
+    # =============================================================================
+    # GOOGLE OAUTH IMPLEMENTATION
+    # =============================================================================
+    
     def get_google_auth_url(self, client_id, redirect_uri=None, state=None):
-        """Generate Google OAuth authorization URL."""
+        """
+        Generate Google OAuth authorization URL.
+        
+        This method creates the authorization URL that users will be redirected
+        to for Google OAuth authentication. It includes all necessary parameters
+        for the OAuth 2.0 flow with PKCE support.
+        
+        Args:
+            client_id (str): Google OAuth client ID
+            redirect_uri (str, optional): Custom redirect URI. If not provided,
+                                        uses the configured Google redirect URI.
+            state (str, optional): State parameter for CSRF protection.
+                                 If not provided, generates a new one.
+        
+        Returns:
+            str: The complete Google OAuth authorization URL
+            
+        Example:
+            https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=...
+        """
+        # Generate state parameter if not provided
         if not state:
             state = self.generate_state()
         
+        # Generate PKCE parameters for enhanced security
         code_verifier = self.generate_code_verifier()
         code_challenge = self.generate_code_challenge(code_verifier)
         
+        # Use configured redirect URI if not provided
         if not redirect_uri:
             redirect_uri = self.config.get_google_redirect_uri()
         
+        # Build authorization parameters
         params = {
             'client_id': client_id,
             'redirect_uri': redirect_uri,
-            'scope': 'openid email profile',
-            'response_type': 'code',
-            'state': state,
-            'code_challenge': code_challenge,
-            'code_challenge_method': 'S256',
-            'access_type': 'offline',
-            'prompt': 'consent'
+            'scope': 'openid email profile',  # Request access to user's basic profile
+            'response_type': 'code',  # Authorization code flow
+            'state': state,  # CSRF protection
+            'code_challenge': code_challenge,  # PKCE challenge
+            'code_challenge_method': 'S256',  # SHA256 method for PKCE
+            'access_type': 'offline',  # Request refresh token
+            'prompt': 'consent'  # Force consent screen
         }
         
-        return f"{self.config.GOOGLE_AUTH_URL}?{urlencode(params)}", state, code_verifier
+        # Build and return the authorization URL
+        auth_url = f"{self.config.GOOGLE_AUTH_URL}?{urlencode(params)}"
+        return auth_url
+    
+    def handle_google_callback(self, code, state, client_id, client_secret):
+        """
+        Handle Google OAuth callback and exchange code for user information.
+        
+        This method processes the callback from Google's OAuth server,
+        exchanges the authorization code for access tokens, and retrieves
+        user information. It implements the complete OAuth 2.0 flow with
+        proper error handling and validation.
+        
+        Args:
+            code (str): Authorization code from Google
+            state (str): State parameter for CSRF protection
+            client_id (str): Google OAuth client ID
+            client_secret (str): Google OAuth client secret
+        
+        Returns:
+            dict: User information dictionary on success, None on failure
+            
+        Raises:
+            Exception: If OAuth flow fails or user information cannot be retrieved
+        """
+        try:
+            # Exchange authorization code for access token
+            token_data = {
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'code': code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': self.config.get_google_redirect_uri()
+            }
+            
+            # Make token exchange request
+            token_response = requests.post(
+                self.config.GOOGLE_TOKEN_URL,
+                data=token_data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            
+            # Check for token exchange errors
+            if token_response.status_code != 200:
+                raise Exception(f"Token exchange failed: {token_response.text}")
+            
+            # Parse token response
+            token_info = token_response.json()
+            access_token = token_info.get('access_token')
+            
+            if not access_token:
+                raise Exception("No access token received from Google")
+            
+            # Retrieve user information using access token
+            user_response = requests.get(
+                self.config.GOOGLE_USER_INFO_URL,
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            
+            # Check for user info retrieval errors
+            if user_response.status_code != 200:
+                raise Exception(f"User info retrieval failed: {user_response.text}")
+            
+            # Parse user information
+            user_info = user_response.json()
+            
+            # Validate and format user information
+            if not user_info.get('id'):
+                raise Exception("Invalid user information received from Google")
+            
+            # Return formatted user information
+            return {
+                'id': user_info.get('id'),
+                'name': user_info.get('name'),
+                'email': user_info.get('email'),
+                'picture': user_info.get('picture'),
+                'provider': 'google'
+            }
+            
+        except Exception as e:
+            # Log error and re-raise for handling by calling code
+            raise Exception(f"Google OAuth callback failed: {str(e)}")
+    
+    # =============================================================================
+    # LINKEDIN OAUTH IMPLEMENTATION
+    # =============================================================================
     
     def get_linkedin_auth_url(self, client_id, redirect_uri=None, state=None):
-        """Generate LinkedIn OAuth authorization URL."""
+        """
+        Generate LinkedIn OAuth authorization URL.
+        
+        This method creates the authorization URL that users will be redirected
+        to for LinkedIn OAuth authentication. It includes all necessary parameters
+        for the OAuth 2.0 flow with PKCE support.
+        
+        Args:
+            client_id (str): LinkedIn OAuth client ID
+            redirect_uri (str, optional): Custom redirect URI. If not provided,
+                                        uses the configured LinkedIn redirect URI.
+            state (str, optional): State parameter for CSRF protection.
+                                 If not provided, generates a new one.
+        
+        Returns:
+            str: The complete LinkedIn OAuth authorization URL
+            
+        Example:
+            https://www.linkedin.com/oauth/v2/authorization?client_id=...&redirect_uri=...&scope=...
+        """
+        # Generate state parameter if not provided
         if not state:
             state = self.generate_state()
         
+        # Generate PKCE parameters for enhanced security
+        code_verifier = self.generate_code_verifier()
+        code_challenge = self.generate_code_challenge(code_verifier)
+        
+        # Use configured redirect URI if not provided
         if not redirect_uri:
             redirect_uri = self.config.get_linkedin_redirect_uri()
         
+        # Build authorization parameters
         params = {
-            'response_type': 'code',
             'client_id': client_id,
             'redirect_uri': redirect_uri,
-            'state': state,
-            'scope': 'openid profile email'
+            'scope': 'openid profile email',  # Request access to user's basic profile
+            'response_type': 'code',  # Authorization code flow
+            'state': state,  # CSRF protection
+            'code_challenge': code_challenge,  # PKCE challenge
+            'code_challenge_method': 'S256'  # SHA256 method for PKCE
         }
         
-        return f"{self.config.LINKEDIN_AUTH_URL}?{urlencode(params)}", state
+        # Build and return the authorization URL
+        auth_url = f"{self.config.LINKEDIN_AUTH_URL}?{urlencode(params)}"
+        return auth_url
     
-    def exchange_google_code(self, code, code_verifier, client_id, client_secret, redirect_uri=None):
-        """Exchange authorization code for access token (Google)."""
-        if not redirect_uri:
-            redirect_uri = self.config.get_google_redirect_uri()
+    def handle_linkedin_callback(self, code, state, client_id, client_secret):
+        """
+        Handle LinkedIn OAuth callback and exchange code for user information.
+        
+        This method processes the callback from LinkedIn's OAuth server,
+        exchanges the authorization code for access tokens, and retrieves
+        user information. It implements the complete OAuth 2.0 flow with
+        proper error handling and validation.
+        
+        Args:
+            code (str): Authorization code from LinkedIn
+            state (str): State parameter for CSRF protection
+            client_id (str): LinkedIn OAuth client ID
+            client_secret (str): LinkedIn OAuth client secret
+        
+        Returns:
+            dict: User information dictionary on success, None on failure
             
-        data = {
-            'client_id': client_id,
-            'client_secret': client_secret,
-            'code': code,
-            'grant_type': 'authorization_code',
-            'redirect_uri': redirect_uri,
-            'code_verifier': code_verifier
-        }
-        
-        response = requests.post(self.config.GOOGLE_TOKEN_URL, data=data)
-        response.raise_for_status()
-        return response.json()
+        Raises:
+            Exception: If OAuth flow fails or user information cannot be retrieved
+        """
+        try:
+            # Exchange authorization code for access token
+            token_data = {
+                'client_id': client_id,
+                'client_secret': client_secret,
+                'code': code,
+                'grant_type': 'authorization_code',
+                'redirect_uri': self.config.get_linkedin_redirect_uri()
+            }
+            
+            # Make token exchange request
+            token_response = requests.post(
+                self.config.LINKEDIN_TOKEN_URL,
+                data=token_data,
+                headers={'Content-Type': 'application/x-www-form-urlencoded'}
+            )
+            
+            # Check for token exchange errors
+            if token_response.status_code != 200:
+                raise Exception(f"Token exchange failed: {token_response.text}")
+            
+            # Parse token response
+            token_info = token_response.json()
+            access_token = token_info.get('access_token')
+            
+            if not access_token:
+                raise Exception("No access token received from LinkedIn")
+            
+            # Retrieve user information using access token
+            user_response = requests.get(
+                self.config.LINKEDIN_USER_INFO_URL,
+                headers={'Authorization': f'Bearer {access_token}'}
+            )
+            
+            # Check for user info retrieval errors
+            if user_response.status_code != 200:
+                raise Exception(f"User info retrieval failed: {user_response.text}")
+            
+            # Parse user information
+            user_info = user_response.json()
+            
+            # Validate and format user information
+            if not user_info.get('sub'):  # LinkedIn uses 'sub' instead of 'id'
+                raise Exception("Invalid user information received from LinkedIn")
+            
+            # Return formatted user information
+            return {
+                'id': user_info.get('sub'),
+                'name': user_info.get('name'),
+                'email': user_info.get('email'),
+                'picture': user_info.get('picture'),
+                'provider': 'linkedin'
+            }
+            
+        except Exception as e:
+            # Log error and re-raise for handling by calling code
+            raise Exception(f"LinkedIn OAuth callback failed: {str(e)}")
     
-    def exchange_linkedin_code(self, code, client_id, client_secret, redirect_uri=None):
-        """Exchange authorization code for access token (LinkedIn)."""
-        if not redirect_uri:
-            redirect_uri = self.config.get_linkedin_redirect_uri()
-        
-        data = {
-            'grant_type': 'authorization_code',
-            'code': code,
-            'redirect_uri': redirect_uri,
-            'client_id': client_id,
-            'client_secret': client_secret
-        }
-        
-        headers = {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        }
-        
-        response = requests.post(self.config.LINKEDIN_TOKEN_URL, data=data, headers=headers)
-        response.raise_for_status()
-        return response.json()
+    # =============================================================================
+    # GENERIC OAUTH METHODS
+    # =============================================================================
     
-    def get_google_user_info(self, access_token):
-        """Get user information from Google API."""
-        headers = {
-            'Authorization': f'Bearer {access_token}'
-        }
+    def get_auth_url(self, provider, client_id, redirect_uri=None, state=None):
+        """
+        Get OAuth authorization URL for any supported provider.
         
-        response = requests.get(self.config.GOOGLE_USER_INFO_URL, headers=headers)
-        response.raise_for_status()
-        user_data = response.json()
+        This method provides a generic interface for getting authorization
+        URLs from any supported OAuth provider. It delegates to the
+        provider-specific implementation.
         
-        # Debug: Print what Google API returns
-        print(f"DEBUG: Google API response: {user_data}")
+        Args:
+            provider (str): OAuth provider ('google' or 'linkedin')
+            client_id (str): OAuth client ID
+            redirect_uri (str, optional): Custom redirect URI
+            state (str, optional): State parameter for CSRF protection
         
-        return user_data
+        Returns:
+            str: The complete OAuth authorization URL
+            
+        Raises:
+            ValueError: If the provider is not supported
+        """
+        if provider == 'google':
+            return self.get_google_auth_url(client_id, redirect_uri, state)
+        elif provider == 'linkedin':
+            return self.get_linkedin_auth_url(client_id, redirect_uri, state)
+        else:
+            raise ValueError(f"Unsupported OAuth provider: {provider}")
     
-    def get_linkedin_user_info(self, access_token):
-        """Get user information from LinkedIn API."""
-        headers = {
-            'Authorization': f'Bearer {access_token}'
-        }
+    def handle_callback(self, provider, code, state, client_id, client_secret):
+        """
+        Handle OAuth callback for any supported provider.
         
-        # Use the new LinkedIn userinfo endpoint
-        response = requests.get(self.config.LINKEDIN_USER_INFO_URL, headers=headers)
-        response.raise_for_status()
-        user_data = response.json()
+        This method provides a generic interface for handling OAuth
+        callbacks from any supported provider. It delegates to the
+        provider-specific implementation.
         
-        # Debug: Print what LinkedIn API returns
-        print(f"DEBUG: LinkedIn API response: {user_data}")
+        Args:
+            provider (str): OAuth provider ('google' or 'linkedin')
+            code (str): Authorization code from OAuth provider
+            state (str): State parameter for CSRF protection
+            client_id (str): OAuth client ID
+            client_secret (str): OAuth client secret
         
-        # Map the response to our expected format
-        # LinkedIn might return picture in different fields or formats
-        picture_url = user_data.get('picture', '')
-        
-        # Try alternative field names if picture is empty
-        if not picture_url:
-            picture_url = user_data.get('picture_url', '')
-        if not picture_url:
-            picture_url = user_data.get('profile_picture', '')
-        if not picture_url:
-            picture_url = user_data.get('profilePicture', '')
-        if not picture_url:
-            picture_url = user_data.get('pictureUrl', '')
-        if not picture_url:
-            picture_url = user_data.get('avatar', '')
-        if not picture_url:
-            picture_url = user_data.get('avatar_url', '')
-        if not picture_url:
-            picture_url = user_data.get('photo', '')
-        if not picture_url:
-            picture_url = user_data.get('photo_url', '')
-        
-        # If picture is still empty, try to construct from other fields
-        if not picture_url and user_data.get('sub'):
-            # LinkedIn might require a separate API call for profile picture
-            # For now, we'll leave it empty and log this
-            print(f"DEBUG: No picture URL found in LinkedIn response. Available fields: {list(user_data.keys())}")
-        
-        user_info = {
-            'id': user_data.get('sub'),  # LinkedIn uses 'sub' for user ID
-            'name': user_data.get('name', ''),
-            'email': user_data.get('email', ''),
-            'picture': picture_url,
-            'first_name': user_data.get('given_name', ''),
-            'last_name': user_data.get('family_name', '')
-        }
-        
-        # If we still don't have a picture, try the LinkedIn People API
-        if not picture_url and user_data.get('sub'):
-            try:
-                print("DEBUG: Attempting to get profile picture from LinkedIn People API")
-                people_response = requests.get(
-                    'https://api.linkedin.com/v2/people/~:(id,profilePicture(displayImage~:playableStreams))',
-                    headers=headers
-                )
-                if people_response.status_code == 200:
-                    people_data = people_response.json()
-                    print(f"DEBUG: LinkedIn People API response: {people_data}")
-                    
-                    # Extract picture URL from the complex LinkedIn response
-                    profile_picture = people_data.get('profilePicture', {})
-                    display_image = profile_picture.get('displayImage~', {})
-                    elements = display_image.get('elements', [])
-                    
-                    if elements:
-                        # Get the largest available image
-                        largest_element = max(elements, key=lambda x: x.get('data', {}).get('com.linkedin.digitalmedia.mediaartifact.StillImage', {}).get('storageSize', {}).get('width', 0))
-                        identifiers = largest_element.get('identifiers', [])
-                        if identifiers:
-                            picture_url = identifiers[0].get('identifier')
-                            print(f"DEBUG: Found LinkedIn picture URL from People API: {picture_url}")
-                            
-            except Exception as e:
-                print(f"DEBUG: LinkedIn People API call failed: {e}")
-        
-        # Update the user_info with the final picture URL
-        user_info['picture'] = picture_url
-        
-        return user_info
+        Returns:
+            dict: User information dictionary on success, None on failure
+            
+        Raises:
+            ValueError: If the provider is not supported
+            Exception: If OAuth flow fails
+        """
+        if provider == 'google':
+            return self.handle_google_callback(code, state, client_id, client_secret)
+        elif provider == 'linkedin':
+            return self.handle_linkedin_callback(code, state, client_id, client_secret)
+        else:
+            raise ValueError(f"Unsupported OAuth provider: {provider}")

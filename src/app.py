@@ -1,48 +1,127 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-from flask_session import Session
+#!/usr/bin/env python3
+"""
+SMLS - Social Media Login Service
+Main Flask Application
+
+This module implements a production-ready social media authentication service
+that provides OAuth 2.0 integration with Google and LinkedIn. The application
+is designed for enterprise deployment with comprehensive security features,
+health monitoring, and subpath support for reverse proxy configurations.
+
+Key Features:
+- OAuth 2.0 authentication with Google and LinkedIn
+- Production-grade security headers and session management
+- Subpath support for reverse proxy deployments
+- Health monitoring endpoint for load balancers
+- Comprehensive error handling and logging
+- WSGI-compatible for production deployment
+
+Architecture:
+- Flask application with modular authentication system
+- OAuth manager handles 3-legged authorization flow
+- Middleware for subpath routing and security headers
+- Session-based state management with secure cookies
+- Configurable base URL for flexible deployment scenarios
+"""
+
+# Standard library imports
 import os
 import sys
 import logging
-import requests
 import argparse
+from urllib.parse import urlparse
 
-# Add the auth directory to the path
+# Third-party imports
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask_session import Session
+
+# Local imports - Add auth directory to Python path for module resolution
 sys.path.append(os.path.join(os.path.dirname(__file__), 'auth'))
+from auth.config import Config
+from auth.oauth_manager import OAuthManager
 
-from config import Config
-from oauth_manager import OAuthManager
+# =============================================================================
+# CONFIGURATION MANAGEMENT
+# =============================================================================
 
-# Parse command line arguments
-parser = argparse.ArgumentParser(description='Social Media Login Service (SMLS)')
-parser.add_argument('--base-url', default='http://localhost:5000', 
-                   help='Base URL for the application (default: http://localhost:5000)')
-args = parser.parse_args()
+def load_configuration():
+    """
+    Load application configuration from environment variables or command line.
+    
+    This function handles the dual-mode operation of the application:
+    1. Direct execution: Parses command line arguments for development
+    2. WSGI import: Reads from environment variables for production
+    
+    The BASE_URL configuration is critical as it determines:
+    - OAuth callback URLs for external providers
+    - Static file serving paths
+    - Application routing for subpath deployments
+    - Security header configuration
+    """
+    if __name__ == "__main__":
+        # Development mode: Parse command line arguments
+        parser = argparse.ArgumentParser(
+            description='Social Media Login Service (SMLS)',
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Examples:
+  python app.py --base-url http://localhost:5000
+  python app.py --base-url https://example.com/app
+  python app.py --base-url http://mydomain.com:8080/smls
+            """
+        )
+        parser.add_argument(
+            '--base-url', 
+            default='http://localhost:5000',
+            help='Base URL for the application (default: http://localhost:5000)'
+        )
+        args = parser.parse_args()
+        Config.BASE_URL = args.base_url
+    else:
+        # Production mode: Read from environment variables
+        Config.BASE_URL = os.environ.get('BASE_URL', 'http://localhost:5000')
 
-# Set the base URL in the config
-Config.BASE_URL = args.base_url
+# Load configuration before creating Flask app
+load_configuration()
 
-# Create a runtime base URL for OAuth callbacks that matches the actual server
 def get_runtime_base_url():
-    """Get the actual runtime base URL for OAuth callbacks."""
-    from urllib.parse import urlparse
+    """
+    Generate runtime base URL for OAuth callbacks.
+    
+    This function creates the actual URL that OAuth providers will use for
+    callbacks. It handles the difference between development and production
+    environments, ensuring that OAuth callbacks work correctly regardless
+    of the deployment configuration.
+    
+    Key considerations:
+    - Development servers typically use HTTP on non-standard ports
+    - Production deployments may use HTTPS with standard ports
+    - Subpath deployments require path preservation
+    - Port mapping for reverse proxy configurations
+    
+    Returns:
+        str: The runtime base URL for OAuth callbacks
+        
+    Example:
+        Input:  https://example.com:8443/app
+        Output: http://example.com:8080/app
+    """
     parsed_url = urlparse(Config.BASE_URL)
     
-    # Use HTTP for development (Flask doesn't support HTTPS)
+    # Force HTTP for development (Flask dev server doesn't support HTTPS)
+    # In production, this would typically be handled by a reverse proxy
     if parsed_url.scheme == 'https':
         scheme = 'http'
     else:
         scheme = parsed_url.scheme
     
-    # Use the development port
+    # Use development port if none specified
     if not parsed_url.port:
-        if scheme == 'https':
-            port = 8080  # Development port
-        else:
-            port = 8080  # Development port
+        port = 8080  # Standard development port
     else:
         port = parsed_url.port
     
-    # Reconstruct the URL with the correct scheme and port
+    # Reconstruct URL with correct scheme and port
     runtime_url = f"{scheme}://{parsed_url.hostname}:{port}{parsed_url.path}"
     return runtime_url
 

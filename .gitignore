@@ -83,6 +83,8 @@ nginx/nginx_startup.log
 # Process ID files
 *.pid
 persist/smls.pid
+persist/smls_gunicorn.pid
+production/smls_gunicorn.pid
 
 # Temporary setup files
 get-pip.py
