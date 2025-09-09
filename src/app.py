@@ -542,9 +542,9 @@ if __name__ == '__main__':
     
     parsed_url = urlparse(Config.BASE_URL)
     
-    # Flask should run on localhost with an available port
+    # Flask should run on all interfaces to be accessible externally
     # nginx will handle the external port and domain
-    host = 'localhost'
+    host = '0.0.0.0'
     port = 5000
     
     # Check if port 5000 is available, if not find an available port
@@ -552,7 +552,7 @@ if __name__ == '__main__':
     def is_port_available(port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
-                s.bind((host, port))
+                s.bind(('0.0.0.0', port))
                 return True
             except OSError:
                 return False

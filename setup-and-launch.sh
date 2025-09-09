@@ -254,21 +254,20 @@ else
     echo -e "${BLUE}🔧 Finding available port for user-level access${NC}"
     AVAILABLE_PORT=$(find_available_port 8080)
     
-    # Add available port to BASE_URL
+    # Add Flask port (5000) to BASE_URL for direct Flask mode
     if [[ "$BASE_URL" == http://* ]]; then
         # Remove http:// prefix
         URL_WITHOUT_PROTOCOL="${BASE_URL#http://}"
-        # Add available port
-        BASE_URL="http://${URL_WITHOUT_PROTOCOL%%/*}:$AVAILABLE_PORT/${URL_WITHOUT_PROTOCOL#*/}"
+        # Add Flask port 5000
+        BASE_URL="http://${URL_WITHOUT_PROTOCOL%%/*}:5000/${URL_WITHOUT_PROTOCOL#*/}"
     elif [[ "$BASE_URL" == https://* ]]; then
         # Remove https:// prefix
         URL_WITHOUT_PROTOCOL="${BASE_URL#https://}"
-        # Add available port (use 8443 for HTTPS)
-        HTTPS_PORT=$(find_available_port 8443)
-        BASE_URL="https://${URL_WITHOUT_PROTOCOL%%/*}:$HTTPS_PORT/${URL_WITHOUT_PROTOCOL#*/}"
+        # Add Flask port 5000 (Flask doesn't support HTTPS directly)
+        BASE_URL="http://${URL_WITHOUT_PROTOCOL%%/*}:5000/${URL_WITHOUT_PROTOCOL#*/}"
     fi
     echo -e "${BLUE}   Updated BASE_URL: $BASE_URL${NC}"
-    echo -e "${BLUE}   Using port $AVAILABLE_PORT for nginx, port 5000 for Flask${NC}"
+    echo -e "${BLUE}   Using direct Flask mode on port 5000${NC}"
 fi
 
 echo -e "${BLUE}   Domain: $DOMAIN${NC}"
