@@ -141,7 +141,10 @@ class OAuthManager:
                                  If not provided, generates a new one.
         
         Returns:
-            str: The complete Google OAuth authorization URL
+            tuple: (auth_url, state, code_verifier) where:
+                - auth_url (str): The complete Google OAuth authorization URL
+                - state (str): State parameter for CSRF protection
+                - code_verifier (str): PKCE code verifier for enhanced security
             
         Example:
             https://accounts.google.com/o/oauth2/v2/auth?client_id=...&redirect_uri=...&scope=...
@@ -171,9 +174,9 @@ class OAuthManager:
             'prompt': 'consent'  # Force consent screen
         }
         
-        # Build and return the authorization URL
+        # Build and return the authorization URL along with state and code_verifier
         auth_url = f"{self.config.GOOGLE_AUTH_URL}?{urlencode(params)}"
-        return auth_url
+        return auth_url, state, code_verifier
     
     def handle_google_callback(self, code, state, client_id, client_secret):
         """
@@ -274,7 +277,9 @@ class OAuthManager:
                                  If not provided, generates a new one.
         
         Returns:
-            str: The complete LinkedIn OAuth authorization URL
+            tuple: (auth_url, state) where:
+                - auth_url (str): The complete LinkedIn OAuth authorization URL
+                - state (str): State parameter for CSRF protection
             
         Example:
             https://www.linkedin.com/oauth/v2/authorization?client_id=...&redirect_uri=...&scope=...
@@ -302,9 +307,9 @@ class OAuthManager:
             'code_challenge_method': 'S256'  # SHA256 method for PKCE
         }
         
-        # Build and return the authorization URL
+        # Build and return the authorization URL along with state
         auth_url = f"{self.config.LINKEDIN_AUTH_URL}?{urlencode(params)}"
-        return auth_url
+        return auth_url, state
     
     def handle_linkedin_callback(self, code, state, client_id, client_secret):
         """
