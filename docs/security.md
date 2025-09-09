@@ -43,9 +43,9 @@ limit_request_line = 4094
 limit_request_fields = 100
 limit_request_field_size = 8190
 
-# Worker security
-user = "nobody"
-group = "nogroup"
+# Worker security (when running as root)
+# user = "nobody"
+# group = "nogroup"
 ```
 
 ## Security Best Practices
@@ -108,7 +108,8 @@ group = "nogroup"
 ufw allow 22/tcp    # SSH
 ufw allow 80/tcp    # HTTP
 ufw allow 443/tcp   # HTTPS
-ufw deny 5000/tcp   # Block direct access to Gunicorn
+# Note: Block direct access to Gunicorn port if using reverse proxy
+# ufw deny 5000/tcp   # Block direct access to Gunicorn
 ```
 
 ### SSL/TLS Configuration

@@ -30,10 +30,9 @@ smls/
 │   └── auth/            # OAuth modules
 ├── config/              # Configuration files
 ├── production/          # Production tools
-├── scripts/             # Setup utilities
+├── scripts/             # Setup script
 ├── docs/                # Documentation
-├── persist/             # Runtime data
-└── nginx/               # Nginx configuration
+└── persist/             # Runtime data
 ```
 
 ## Configuration

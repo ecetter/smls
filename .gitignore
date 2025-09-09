@@ -71,7 +71,7 @@ persist/logs/
 tokens.json
 credentials.json
 
-# Nginx system-specific files
+# Nginx system-specific files (if using nginx)
 nginx/nginx-smls-generated.conf
 nginx/nginx-smls-system.conf
 nginx/nginx.pid
@@ -88,3 +88,10 @@ production/smls_gunicorn.pid
 
 # Temporary setup files
 get-pip.py
+
+# Test files
+cookies.txt
+cookies*.txt
+
+# Runtime data
+persist/smls_gunicorn.pid

@@ -203,6 +203,7 @@ def static_files(filename):
     from flask import send_from_directory
     return send_from_directory('static', filename)
 
+
 @app.route('/setup')
 def setup_credentials():
     """OAuth credentials setup page."""
@@ -235,7 +236,7 @@ def save_credentials():
                 'client_secret': google_client_secret,
                 'enabled': True
             }
-            flash('Google+ OAuth credentials added successfully!', 'success')
+            flash('Google OAuth credentials added successfully!', 'success')
         
         # Process LinkedIn credentials
         if linkedin_enabled:
@@ -285,10 +286,10 @@ def remove_credential():
         if provider in oauth_credentials:
             del oauth_credentials[provider]
             session['oauth_credentials'] = oauth_credentials
-            provider_name = 'Google+' if provider == 'google' else provider.title()
+            provider_name = 'Google' if provider == 'google' else provider.title()
             flash(f'{provider_name} OAuth credentials removed successfully!', 'success')
         else:
-            provider_name = 'Google+' if provider == 'google' else provider.title()
+            provider_name = 'Google' if provider == 'google' else provider.title()
             flash(f'{provider_name} credentials not found.', 'error')
         
         return redirect(url_for('setup_credentials'))

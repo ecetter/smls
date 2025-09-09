@@ -86,7 +86,7 @@ app.config.update(
     SECRET_KEY=os.environ.get('SECRET_KEY', 'your-secret-key-change-this-in-production'),
     
     # Session security configuration
-    SESSION_COOKIE_SECURE=True,      # Only send cookies over HTTPS
+    SESSION_COOKIE_SECURE=os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true',  # Only send cookies over HTTPS in production
     SESSION_COOKIE_HTTPONLY=True,    # Prevent XSS attacks on cookies
     SESSION_COOKIE_SAMESITE='Lax',   # CSRF protection
     

@@ -19,7 +19,7 @@ export FLASK_DEBUG='False'
 ### Google OAuth
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a new project or select existing
-3. Enable Google+ API
+3. Enable Google OAuth API
 4. Create OAuth 2.0 credentials
 5. Add authorized redirect URI: `http://yourdomain.com/yourpath/auth/google/callback`
 
@@ -61,9 +61,11 @@ Edit `config/gunicorn.conf.py` to modify:
 - **Strict-Transport-Security**: max-age=31536000
 - **Content-Security-Policy**: Restrictive policy
 
-## Nginx Configuration
+## Reverse Proxy Configuration
 
-### Basic Setup
+### Nginx Setup (Optional)
+If using Nginx as a reverse proxy, configure it to forward requests to the SMLS application:
+
 ```nginx
 server {
     listen 80;
@@ -97,6 +99,8 @@ server {
     }
 }
 ```
+
+**Note**: SMLS can run standalone without a reverse proxy. The application includes built-in security headers and can handle direct connections.
 
 ## Health Monitoring
 

@@ -280,25 +280,13 @@ echo ""
 echo -e "${YELLOW} Creating necessary directories...${NC}"
 mkdir -p logs
 mkdir -p sessions
-mkdir -p nginx/logs
+mkdir -p persist/logs
 echo -e "${GREEN} Directories created${NC}"
 
-# Setup nginx configuration
-echo -e "${YELLOW} Setting up nginx configuration...${NC}"
-
-# Generate user-level nginx configuration
-sed -e "s|DOMAIN|$DOMAIN|g" \
--e "s|PATH|$PATH_PART|g" \
-nginx/nginx-smls.conf > nginx/nginx-smls-generated.conf
-
-# Update paths for user-level deployment
-sed -i.bak \
--e "s|/var/log/nginx|$SMLS_DIR/nginx/logs|g" \
--e "s|/etc/nginx|$SMLS_DIR/nginx|g" \
-nginx/nginx-smls-generated.conf
-rm -f nginx/nginx-smls-generated.conf.bak
-
-echo -e "${GREEN} nginx configuration generated${NC}"
+# Skip nginx setup for portability
+echo -e "${YELLOW} Skipping nginx setup for portability...${NC}"
+echo -e "${BLUE}   • SMLS will run in direct mode${NC}"
+echo -e "${BLUE}   • Use reverse proxy if needed${NC}"
 
 echo -e "${GREEN} Configuration setup complete${NC}"
 echo ""
@@ -321,31 +309,11 @@ echo -e "${BLUE}   • Production-grade security headers${NC}"
 echo -e "${BLUE}   • Health monitoring and auto-recovery${NC}"
 echo -e "${BLUE}   • Graceful shutdown handling${NC}"
 
-# Start nginx if available (user-level only)
-if [ -n "$NGINX_CMD" ]; then
-echo -e "${YELLOW} Starting nginx in user mode...${NC}"
-
-# Check if nginx is already running
-if [ -f "nginx/nginx.pid" ] && kill -0 "$(cat nginx/nginx.pid)" 2>/dev/null; then
-echo -e "${YELLOW}  nginx is already running, stopping it first...${NC}"
-kill "$(cat nginx/nginx.pid)" 2>/dev/null || true
-rm -f nginx/nginx.pid
-fi
-
-# Start nginx in user mode
-$NGINX_CMD -c "$SMLS_DIR/nginx/nginx-smls-generated.conf" -p "$SMLS_DIR/nginx" > nginx/nginx_startup.log 2>&1 &
-sleep 3
-
-if [ -f "nginx/nginx.pid" ] && kill -0 "$(cat nginx/nginx.pid)" 2>/dev/null; then
-echo -e "${GREEN} nginx started successfully${NC}"
-else
-echo -e "${YELLOW}  nginx failed to start, continuing with direct Flask mode${NC}"
-if [ -f "nginx/nginx_startup.log" ]; then
-echo -e "${YELLOW}   nginx error: $(head -1 nginx/nginx_startup.log)${NC}"
-fi
-NGINX_CMD=""
-fi
-fi
+# Skip nginx startup for portability
+echo -e "${YELLOW} Running in direct mode (no nginx)...${NC}"
+echo -e "${BLUE}   • SMLS will handle requests directly${NC}"
+echo -e "${BLUE}   • Built-in security headers enabled${NC}"
+echo -e "${BLUE}   • Use reverse proxy if needed${NC}"
 
 # Start SMLS using production manager
 echo -e "${YELLOW} Starting SMLS in production mode...${NC}"

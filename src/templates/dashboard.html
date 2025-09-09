@@ -9,7 +9,7 @@
             Welcome back, <span class="gradient-text">{{ user.name }}</span>
         </h1>
         <p class="welcome-subtitle">
-            You're successfully authenticated with {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+            You're successfully authenticated with {% if user.provider == 'google' %}Google{% else %}{{ user.provider|title }}{% endif %}
         </p>
     </div>
     
@@ -38,7 +38,7 @@
                     <p class="profile-email">{{ user.email }}</p>
                     <div class="provider-badge {{ user.provider }}">
                         <i class="fab fa-{{ user.provider }}"></i>
-                        {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+                        {% if user.provider == 'google' %}Google{% else %}{{ user.provider|title }}{% endif %}
                     </div>
                 </div>
             </div>
@@ -83,7 +83,7 @@
                     <div class="detail-value">
                         <span class="provider-badge {{ user.provider }}">
                             <i class="fab fa-{{ user.provider }}"></i>
-                            {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+                            {% if user.provider == 'google' %}Google{% else %}{{ user.provider|title }}{% endif %}
                         </span>
                     </div>
                 </div>
