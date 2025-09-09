@@ -64,8 +64,12 @@ if application_prefix:
             self.prefix = prefix
         
         def __call__(self, environ, start_response):
-            # Remove the prefix from PATH_INFO
-            if environ['PATH_INFO'].startswith(self.prefix):
+            # Don't strip prefix for static files - they need the full path
+            if environ['PATH_INFO'].startswith(f'{self.prefix}/static/'):
+                # For static files, just remove the prefix from the path
+                environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+            elif environ['PATH_INFO'].startswith(self.prefix):
+                # For other requests, remove the prefix
                 environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
                 if not environ['PATH_INFO']:
                     environ['PATH_INFO'] = '/'
@@ -529,4 +533,5 @@ if __name__ == '__main__':
         print(f"📁 Application prefix: {application_prefix}")
         print(f"   Routes will be available under: {application_prefix}/")
     
-    app.run(host=host, port=port, debug=True)
+    # Configure Flask to prevent thread exhaustion
+    app.run(host=host, port=port, debug=True, threaded=True, use_reloader=False)
