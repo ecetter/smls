@@ -21,8 +21,17 @@ args = parser.parse_args()
 # Set the base URL in the config
 Config.BASE_URL = args.base_url
 
-# Initialize Flask app
-app = Flask(__name__)
+# Extract application prefix from base URL for subpath deployment
+from urllib.parse import urlparse
+parsed_base_url = urlparse(Config.BASE_URL)
+application_prefix = parsed_base_url.path.rstrip('/') if parsed_base_url.path != '/' else ''
+
+# Initialize Flask app with application prefix if needed
+if application_prefix:
+    app = Flask(__name__, static_url_path=f'{application_prefix}/static')
+else:
+    app = Flask(__name__)
+
 app.config.from_object(Config)
 
 # Make config available in templates
@@ -46,6 +55,22 @@ Session(app)
 
 # Initialize OAuth manager (will be configured dynamically)
 oauth_manager = OAuthManager()
+
+# Add URL prefix for subpath deployment
+if application_prefix:
+    from werkzeug.middleware.dispatcher import DispatcherMiddleware
+    from werkzeug.wrappers import Response
+    
+    # Create a simple wrapper to handle the prefix
+    def prefix_middleware(environ, start_response):
+        # Remove the prefix from PATH_INFO
+        if environ['PATH_INFO'].startswith(application_prefix):
+            environ['PATH_INFO'] = environ['PATH_INFO'][len(application_prefix):]
+            if not environ['PATH_INFO']:
+                environ['PATH_INFO'] = '/'
+        return app(environ, start_response)
+    
+    app.wsgi_app = prefix_middleware
 
 @app.route('/')
 def index():
@@ -497,5 +522,10 @@ if __name__ == '__main__':
     elif port in [80, 443] and host != 'localhost':
         print("⚠️  Note: Using privileged ports (80/443) requires root privileges.")
         print("   For development, consider using ports 8080 (HTTP) or 8443 (HTTPS)")
+    
+    # Show application prefix info if applicable
+    if application_prefix:
+        print(f"📁 Application prefix: {application_prefix}")
+        print(f"   Routes will be available under: {application_prefix}/")
     
     app.run(host=host, port=port, debug=True)
