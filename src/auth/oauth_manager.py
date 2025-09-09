@@ -178,7 +178,7 @@ class OAuthManager:
         auth_url = f"{self.config.GOOGLE_AUTH_URL}?{urlencode(params)}"
         return auth_url, state, code_verifier
     
-    def handle_google_callback(self, code, state, client_id, client_secret):
+    def handle_google_callback(self, code, state, client_id, client_secret, code_verifier=None):
         """
         Handle Google OAuth callback and exchange code for user information.
         
@@ -192,6 +192,7 @@ class OAuthManager:
             state (str): State parameter for CSRF protection
             client_id (str): Google OAuth client ID
             client_secret (str): Google OAuth client secret
+            code_verifier (str, optional): PKCE code verifier for enhanced security
         
         Returns:
             dict: User information dictionary on success, None on failure
@@ -208,6 +209,10 @@ class OAuthManager:
                 'grant_type': 'authorization_code',
                 'redirect_uri': self.config.get_google_redirect_uri()
             }
+            
+            # Add PKCE code verifier if provided
+            if code_verifier:
+                token_data['code_verifier'] = code_verifier
             
             # Make token exchange request
             token_response = requests.post(

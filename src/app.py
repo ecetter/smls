@@ -395,21 +395,17 @@ def google_callback():
             return redirect(url_for('setup_credentials'))
         
         logger.info("Exchanging Google authorization code for tokens")
-        token_data = oauth_manager.exchange_google_code(
-            code, code_verifier, 
+        user_info = oauth_manager.handle_google_callback(
+            code, state, 
             google_creds['client_id'], 
-            google_creds['client_secret']
+            google_creds['client_secret'],
+            code_verifier
         )
-        access_token = token_data.get('access_token')
         
-        if not access_token:
-            logger.error("Google callback: Failed to obtain access token")
-            flash('Failed to obtain access token.', 'error')
+        if not user_info:
+            logger.error("Google callback: Failed to obtain user information")
+            flash('Failed to obtain user information.', 'error')
             return redirect(url_for('index'))
-        
-        # Get user information
-        logger.info("Fetching Google user information")
-        user_info = oauth_manager.get_google_user_info(access_token)
         
         # Store user data in session
         session['user'] = {
@@ -468,21 +464,17 @@ def linkedin_callback():
             return redirect(url_for('setup_credentials'))
         
         logger.info("Exchanging LinkedIn authorization code for tokens")
-        token_data = oauth_manager.exchange_linkedin_code(
+        user_info = oauth_manager.handle_linkedin_callback(
             code, 
+            state,
             linkedin_creds['client_id'], 
             linkedin_creds['client_secret']
         )
-        access_token = token_data.get('access_token')
         
-        if not access_token:
-            logger.error("LinkedIn callback: Failed to obtain access token")
-            flash('Failed to obtain access token.', 'error')
+        if not user_info:
+            logger.error("LinkedIn callback: Failed to obtain user information")
+            flash('Failed to obtain user information.', 'error')
             return redirect(url_for('index'))
-        
-        # Get user information
-        logger.info("Fetching LinkedIn user information")
-        user_info = oauth_manager.get_linkedin_user_info(access_token)
         
         # Store user data in session
         session['user'] = {
