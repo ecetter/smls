@@ -66,14 +66,50 @@ echo -e "${YELLOW}🔧 Setting up Python environment and dependencies...${NC}"
 if [ ! -d "smls_env" ]; then
     echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
     python3 -m venv smls_env
-    echo -e "${GREEN}✅ Virtual environment created${NC}"
+    if [ $? -eq 0 ]; then
+        echo -e "${GREEN}✅ Virtual environment created${NC}"
+    else
+        echo -e "${RED}❌ Failed to create virtual environment${NC}"
+        echo -e "${YELLOW}💡 Make sure python3-venv package is installed:${NC}"
+        echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
+        echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
+        echo -e "${YELLOW}   macOS: python3 -m ensurepip --upgrade${NC}"
+        exit 1
+    fi
 else
     echo -e "${GREEN}✅ Virtual environment already exists${NC}"
+    # Check if the virtual environment is actually functional
+    if [ ! -f "smls_env/bin/activate" ] || [ ! -f "smls_env/bin/python" ]; then
+        echo -e "${YELLOW}⚠️  Virtual environment appears corrupted, recreating...${NC}"
+        rm -rf smls_env
+        python3 -m venv smls_env
+        if [ $? -eq 0 ]; then
+            echo -e "${GREEN}✅ Virtual environment recreated${NC}"
+        else
+            echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
+            exit 1
+        fi
+    fi
 fi
 
 # Activate virtual environment
 echo -e "${YELLOW}🔄 Activating virtual environment...${NC}"
-source smls_env/bin/activate
+if [ -f "smls_env/bin/activate" ]; then
+    source smls_env/bin/activate
+    echo -e "${GREEN}✅ Virtual environment activated${NC}"
+else
+    echo -e "${RED}❌ Virtual environment activation script not found${NC}"
+    echo -e "${YELLOW}🔧 Recreating virtual environment...${NC}"
+    rm -rf smls_env
+    python3 -m venv smls_env
+    if [ $? -eq 0 ]; then
+        source smls_env/bin/activate
+        echo -e "${GREEN}✅ Virtual environment recreated and activated${NC}"
+    else
+        echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
+        exit 1
+    fi
+fi
 
 # Check if pip is available
 if ! python -m pip --version > /dev/null 2>&1; then
