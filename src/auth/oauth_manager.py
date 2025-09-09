@@ -378,6 +378,9 @@ class OAuthManager:
             # Parse user information
             user_info = user_response.json()
             
+            # Debug: Log the LinkedIn userinfo response structure
+            logger.info(f"LinkedIn userinfo response: {user_info}")
+            
             # Validate and format user information
             if not user_info.get('sub'):  # LinkedIn uses 'sub' instead of 'id'
                 raise Exception("Invalid user information received from LinkedIn")
@@ -396,6 +399,7 @@ class OAuthManager:
                 
                 if profile_response.status_code == 200:
                     profile_data = profile_response.json()
+                    logger.info(f"LinkedIn profile picture API response: {profile_data}")
                     # Extract profile picture URL from LinkedIn's nested structure
                     if profile_data.get('profilePicture') and profile_data['profilePicture'].get('displayImage~'):
                         elements = profile_data['profilePicture']['displayImage~'].get('elements', [])
@@ -404,11 +408,16 @@ class OAuthManager:
                             largest_image = max(elements, key=lambda x: x.get('data', {}).get('com.linkedin.digitalmedia.mediaartifact.StillImage', {}).get('storageSize', {}).get('width', 0))
                             if largest_image.get('identifiers'):
                                 picture_url = largest_image['identifiers'][0].get('identifier')
+                                logger.info(f"LinkedIn profile picture URL found: {picture_url}")
+                    else:
+                        logger.info("LinkedIn profile picture data not found in expected structure")
                 else:
+                    logger.info(f"LinkedIn profile picture API failed with status {profile_response.status_code}: {profile_response.text}")
                     # If the profile picture request fails, try a simpler approach
                     # Some LinkedIn users might have profile pictures in the userinfo response
                     if user_info.get('picture'):
                         picture_url = user_info.get('picture')
+                        logger.info(f"LinkedIn fallback picture from userinfo: {picture_url}")
             except Exception as e:
                 # If profile picture request fails, continue without it
                 # Try to get picture from userinfo response as fallback
@@ -416,10 +425,14 @@ class OAuthManager:
                     picture_url = user_info.get('picture')
             
             # Return formatted user information
+            # LinkedIn might use different field names, so we'll try multiple possibilities
+            name = user_info.get('name') or user_info.get('given_name', '') + ' ' + user_info.get('family_name', '')
+            email = user_info.get('email') or user_info.get('email_verified')
+            
             return {
                 'id': user_info.get('sub'),
-                'name': user_info.get('name'),
-                'email': user_info.get('email'),
+                'name': name.strip() if name else 'LinkedIn User',
+                'email': email,
                 'picture': picture_url,
                 'provider': 'linkedin'
             }
