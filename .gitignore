@@ -32,6 +32,7 @@ env/
 ENV/
 env.bak/
 venv.bak/
+smls_env/
 
 # Flask
 instance/
@@ -60,6 +61,7 @@ Thumbs.db
 # Logs
 *.log
 logs/
+persist/logs/
 
 # Temporary files
 *.tmp
@@ -68,3 +70,18 @@ logs/
 # OAuth tokens and sensitive data
 tokens.json
 credentials.json
+
+# Nginx system-specific files
+nginx/nginx-smls-generated.conf
+nginx/nginx-smls-system.conf
+nginx/nginx.pid
+nginx/logs/
+nginx/access.log
+nginx/error.log
+
+# Process ID files
+*.pid
+persist/smls.pid
+
+# Temporary setup files
+get-pip.py
