@@ -471,6 +471,8 @@ def linkedin_callback():
             linkedin_creds['client_secret']
         )
         
+        logger.error(f"DEBUG: LinkedIn callback received user_info: {user_info}")
+        
         if not user_info:
             logger.error("LinkedIn callback: Failed to obtain user information")
             flash('Failed to obtain user information.', 'error')
@@ -479,7 +481,7 @@ def linkedin_callback():
         # Store user data in session
         session['user'] = {
             'id': user_info.get('id'),
-            'name': f"{user_info.get('first_name', '')} {user_info.get('last_name', '')}".strip(),
+            'name': user_info.get('name', 'LinkedIn User'),
             'email': user_info.get('email'),
             'picture': user_info.get('picture'),
             'provider': 'linkedin'

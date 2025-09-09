@@ -37,6 +37,15 @@ from .config import Config
 
 # Configure logger for OAuth operations
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Add a handler to ensure logs go to the error log
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
 class OAuthManager:
     """
@@ -383,7 +392,7 @@ class OAuthManager:
             user_info = user_response.json()
             
             # Debug: Log the LinkedIn userinfo response structure
-            logger.info(f"LinkedIn userinfo response: {user_info}")
+            logger.error(f"DEBUG: LinkedIn userinfo response: {user_info}")
             print(f"DEBUG: LinkedIn userinfo response: {user_info}")
             
             # Validate and format user information
@@ -404,7 +413,7 @@ class OAuthManager:
                 
                 if profile_response.status_code == 200:
                     profile_data = profile_response.json()
-                    logger.info(f"LinkedIn profile picture API response: {profile_data}")
+                    logger.error(f"DEBUG: LinkedIn profile picture API response: {profile_data}")
                     print(f"DEBUG: LinkedIn profile picture API response: {profile_data}")
                     # Extract profile picture URL from LinkedIn's nested structure
                     if profile_data.get('profilePicture') and profile_data['profilePicture'].get('displayImage~'):
@@ -443,6 +452,7 @@ class OAuthManager:
                 'provider': 'linkedin'
             }
             
+            logger.error(f"DEBUG: LinkedIn final result: {result}")
             print(f"DEBUG: LinkedIn final result: {result}")
             return result
             
