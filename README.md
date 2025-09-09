@@ -21,21 +21,49 @@ python scripts/launch.py
 
 ## Deployment
 
-### Configure Base URL
-**Option 1: Environment Variable (Recommended)**
+### Option 1: Direct Flask (Development)
+**Environment Variable (Recommended)**
 ```bash
 export BASE_URL=https://yourdomain.com
 python scripts/launch.py
 ```
 
-**Option 2: Direct Command Line**
+**Direct Command Line**
 ```bash
 python src/app.py --base-url https://yourdomain.com
 ```
 
+### Option 2: Nginx Reverse Proxy (Production)
+For clean URLs without port numbers, use the nginx configuration:
+
+```bash
+# Set your desired URL
+export BASE_URL='http://yourdomain.com/your/path'
+
+# Setup nginx reverse proxy
+./nginx/setup-nginx.sh
+
+# Start SMLS with nginx
+./nginx/start-with-nginx.sh
+```
+
+This will make SMLS available at your BASE_URL instead of requiring port numbers.
+
+Examples:
+- `export BASE_URL='http://emeryetter.com/sweng861/smls'`
+- `export BASE_URL='https://mydomain.com/app'`
+- `export BASE_URL='http://localhost/myapp'`
+
+See `nginx/NGINX-SETUP.md` for detailed nginx setup instructions.
+
 ### OAuth App Configuration
-- **Google+**: Use redirect URI `https://yourdomain.com/auth/google/callback`
-- **LinkedIn**: Use redirect URI `https://yourdomain.com/auth/linkedin/callback`
+- **Google+**: Use redirect URI `{BASE_URL}/auth/google/callback`
+- **LinkedIn**: Use redirect URI `{BASE_URL}/auth/linkedin/callback`
+
+Examples:
+- If BASE_URL is `http://emeryetter.com/sweng861/smls`:
+  - Google: `http://emeryetter.com/sweng861/smls/auth/google/callback`
+  - LinkedIn: `http://emeryetter.com/sweng861/smls/auth/linkedin/callback`
 
 ## Requirements
 

@@ -62,7 +62,12 @@ start_app() {
     cd "$APP_DIR"
     
     # Start the app in background and save PID
-    nohup python3 scripts/launch.py > "$LOG_FILE" 2>&1 &
+    # Pass BASE_URL environment variable if set
+    if [ -n "$BASE_URL" ]; then
+        nohup env BASE_URL="$BASE_URL" python3 scripts/launch.py > "$LOG_FILE" 2>&1 &
+    else
+        nohup python3 scripts/launch.py > "$LOG_FILE" 2>&1 &
+    fi
     local pid=$!
     echo $pid > "$PID_FILE"
     
