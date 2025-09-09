@@ -542,10 +542,28 @@ if __name__ == '__main__':
     
     parsed_url = urlparse(Config.BASE_URL)
     
-    # Flask should always run on localhost:5000 internally
+    # Flask should run on localhost with an available port
     # nginx will handle the external port and domain
     host = 'localhost'
     port = 5000
+    
+    # Check if port 5000 is available, if not find an available port
+    import socket
+    def is_port_available(port):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind((host, port))
+                return True
+            except OSError:
+                return False
+    
+    # Try to find an available port starting from 5000
+    original_port = port
+    while not is_port_available(port) and port < 5100:
+        port += 1
+    
+    if port != original_port:
+        print(f"⚠️  Port {original_port} is in use, using port {port} instead")
     
     print(f"🌐 Starting server on {host}:{port}")
     print(f"📱 Base URL: {Config.BASE_URL}")
