@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Social Media Login Service (SMLS){% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Dark Theme -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dark-theme.css') }}">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-content">
+                <a href="{{ url_for('index') }}" class="nav-brand">
+                    <i class="fas fa-shield-alt icon"></i>
+                    <span>SMLS</span>
+                </a>
+                <div class="nav-links">
+                    {% if session.user %}
+                        <a href="{{ url_for('login_google') }}" class="nav-link {% if request.endpoint == 'dashboard' and session.user.provider == 'google' %}nav-link-active{% endif %}">
+                            <i class="fab fa-google icon"></i>
+                            Google+
+                        </a>
+                        <a href="{{ url_for('login_linkedin') }}" class="nav-link {% if request.endpoint == 'dashboard' and session.user.provider == 'linkedin' %}nav-link-active{% endif %}">
+                            <i class="fab fa-linkedin icon"></i>
+                            LinkedIn
+                        </a>
+                        <a href="{{ url_for('logout') }}" class="nav-link">
+                            <i class="fas fa-sign-out-alt icon"></i>
+                            Logout
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('login_google') }}" class="nav-link nav-link-inactive">
+                            <i class="fab fa-google icon"></i>
+                            Google+
+                        </a>
+                        <a href="{{ url_for('login_linkedin') }}" class="nav-link nav-link-inactive">
+                            <i class="fab fa-linkedin icon"></i>
+                            LinkedIn
+                        </a>
+                        <a href="{{ url_for('setup_credentials') }}" class="nav-link">
+                            <i class="fas fa-cog icon"></i>
+                            Setup
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} fade-in">
+                                <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'error' %}exclamation-circle{% else %}info-circle{% endif %} icon"></i>
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Page Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

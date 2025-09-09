@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Welcome {{ user.name }}{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+    <div class="welcome-section">
+        <h1 class="welcome-title">
+            Welcome back, <span class="gradient-text">{{ user.name }}</span>
+        </h1>
+        <p class="welcome-subtitle">
+            You're successfully authenticated with {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+        </p>
+    </div>
+    
+    <div class="dashboard-grid">
+        <!-- Profile Card -->
+        <div class="profile-card card">
+            <div class="profile-header">
+                <div class="profile-picture-container">
+                    {% if user.picture %}
+                        {% if user.provider == 'linkedin' %}
+                            {% set image_url = '/image-proxy/' + user.picture|urlencode %}
+                        {% else %}
+                            {% set image_url = user.picture %}
+                        {% endif %}
+                        
+                        <img src="{{ image_url }}" alt="Profile Picture" class="profile-picture">
+                    {% else %}
+                        <div class="profile-picture-placeholder">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="profile-info">
+                    <h2 class="profile-name">{{ user.name }}</h2>
+                    <p class="profile-email">{{ user.email }}</p>
+                    <div class="provider-badge {{ user.provider }}">
+                        <i class="fab fa-{{ user.provider }}"></i>
+                        {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="profile-actions">
+                <button class="btn btn-primary" onclick="refreshUserData()">
+                    <i class="fas fa-sync-alt icon"></i>
+                    Refresh Data
+                </button>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger">
+                    <i class="fas fa-sign-out-alt icon"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+        
+        <!-- User Details Card -->
+        <div class="details-card card">
+            <h3 class="card-title">
+                <i class="fas fa-user-circle icon"></i>
+                User Information
+            </h3>
+            
+            <div class="details-grid">
+                <div class="detail-item">
+                    <div class="detail-label">User ID</div>
+                    <div class="detail-value">{{ user.id }}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">Full Name</div>
+                    <div class="detail-value">{{ user.name }}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">Email Address</div>
+                    <div class="detail-value">{{ user.email }}</div>
+                </div>
+                
+                <div class="detail-item">
+                    <div class="detail-label">Authentication Provider</div>
+                    <div class="detail-value">
+                        <span class="provider-badge {{ user.provider }}">
+                            <i class="fab fa-{{ user.provider }}"></i>
+                            {% if user.provider == 'google' %}Google+{% else %}{{ user.provider|title }}{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Information Card -->
+        <div class="api-card card">
+            <h3 class="card-title">
+                <i class="fas fa-code icon"></i>
+                API Information
+            </h3>
+            
+            <div class="api-info">
+                <p class="api-description">
+                    Access your user data programmatically using our REST API.
+                </p>
+                
+                <div class="api-endpoint">
+                    <div class="endpoint-label">GET /api/user</div>
+                    <div class="endpoint-url">{{ request.url_root }}api/user</div>
+                </div>
+                
+                <div class="api-response">
+                    <h4>Response Format:</h4>
+                    <pre class="json-response">{
+  "id": "{{ user.id }}",
+  "name": "{{ user.name }}",
+  "email": "{{ user.email }}",
+  "provider": "{{ user.provider }}"
+}</pre>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+.dashboard-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+
+.welcome-section {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.welcome-title {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+}
+
+.gradient-text {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.welcome-subtitle {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+}
+
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.profile-card {
+    grid-column: span 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.details-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.api-card {
+    display: flex;
+    flex-direction: column;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+.profile-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-picture-container {
+    flex-shrink: 0;
+}
+
+.profile-picture-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    border: 3px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    color: var(--text-muted);
+}
+
+.profile-picture {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid var(--border-color);
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-actions {
+    margin-top: auto;
+}
+
+.profile-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+}
+
+.profile-email {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.card-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+}
+
+.card-title .icon {
+    color: var(--accent-primary);
+}
+
+.details-grid {
+    display: grid;
+    gap: 1rem;
+    flex: 1;
+}
+
+.detail-item {
+    padding: 1rem;
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.detail-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.detail-value {
+    font-size: 1rem;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.api-info {
+    color: var(--text-secondary);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.api-description {
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    font-size: 0.95rem;
+}
+
+.api-endpoint {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.endpoint-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 0.5rem;
+}
+
+.endpoint-url {
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.api-response {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.api-response h4 {
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+}
+
+.json-response {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    flex: 1;
+    min-height: 120px;
+}
+
+
+@media (max-width: 1024px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    
+    .profile-card {
+        grid-column: span 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        padding: 0 0.5rem;
+    }
+    
+    .welcome-section {
+        margin-bottom: 1.5rem;
+    }
+    
+    .welcome-title {
+        font-size: 1.75rem;
+    }
+    
+    .profile-card {
+        grid-column: span 1;
+    }
+    
+    .profile-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .profile-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .dashboard-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .profile-picture-placeholder,
+    .profile-picture {
+        width: 80px;
+        height: 80px;
+    }
+    
+    .profile-name {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function refreshUserData() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.innerHTML = '<span class="loading"></span> Refreshing...';
+    button.disabled = true;
+    
+    // Simulate API call
+    fetch('/api/user')
+        .then(response => response.json())
+        .then(data => {
+            // Show success state
+            button.innerHTML = '<i class="fas fa-check icon"></i> Refreshed!';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-success');
+            
+            // Reload page after a short delay
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        })
+        .catch(error => {
+            // Show error state
+            button.innerHTML = '<i class="fas fa-exclamation-triangle icon"></i> Error';
+            button.classList.remove('btn-primary');
+            button.classList.add('btn-danger');
+            
+            // Reset after delay
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-primary');
+                button.disabled = false;
+            }, 2000);
+        });
+}
+</script>
+{% endblock %}
