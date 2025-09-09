@@ -542,21 +542,10 @@ if __name__ == '__main__':
     
     parsed_url = urlparse(Config.BASE_URL)
     
-    # Extract host and port from the base URL
-    host = parsed_url.hostname or 'localhost'
-    port = parsed_url.port or 5000  # Default to 5000 if no port specified
-    
-    # For development mode, avoid privileged ports (80, 443) unless explicitly specified
-    # This prevents "Permission denied" errors when running without root privileges
-    if not parsed_url.port:  # Only adjust if no explicit port was provided
-        if parsed_url.scheme == 'https' and host != 'localhost':
-            # For HTTPS domains without explicit port, use 8080 (HTTP) for development
-            # Flask development server doesn't support HTTPS/SSL
-            port = 8080
-        elif parsed_url.scheme == 'http' and host != 'localhost':
-            # For HTTP domains without explicit port, use 8080 instead of 80
-            port = 8080
-        # For localhost, keep the default 5000 regardless of scheme
+    # Flask should always run on localhost:5000 internally
+    # nginx will handle the external port and domain
+    host = 'localhost'
+    port = 5000
     
     print(f"🌐 Starting server on {host}:{port}")
     print(f"📱 Base URL: {Config.BASE_URL}")

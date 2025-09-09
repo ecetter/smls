@@ -319,7 +319,7 @@ if [ -n "$NGINX_CMD" ]; then
     fi
     
     # Start nginx in user mode
-    $NGINX_CMD -c "$SMLS_DIR/nginx/nginx-smls-generated.conf" -p "$SMLS_DIR/nginx" -g "pid nginx.pid; error_log logs/error.log; access_log logs/access.log;" &
+    $NGINX_CMD -c "$SMLS_DIR/nginx/nginx-smls-generated.conf" -p "$SMLS_DIR/nginx" &
     sleep 2
     
     if [ -f "nginx/nginx.pid" ] && kill -0 "$(cat nginx/nginx.pid)" 2>/dev/null; then

@@ -62,9 +62,9 @@ start_app() {
     cd "$APP_DIR"
     
     # Start the app in background and save PID
-    # Pass BASE_URL environment variable if set
+    # Pass BASE_URL as command line argument if set
     if [ -n "$BASE_URL" ]; then
-        nohup env BASE_URL="$BASE_URL" python3 src/app.py > "$LOG_FILE" 2>&1 &
+        nohup python3 src/app.py --base-url "$BASE_URL" > "$LOG_FILE" 2>&1 &
     else
         nohup python3 src/app.py > "$LOG_FILE" 2>&1 &
     fi
