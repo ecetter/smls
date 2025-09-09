@@ -51,29 +51,114 @@ def create_virtual_environment():
         
         # Verify pip installation
         if not verify_pip_installation():
-            print("❌ Error: Pip not properly installed in virtual environment")
-            print("   Attempting to install pip manually...")
-            try:
-                # Try to install pip manually if it's missing
-                if platform.system() == "Windows":
-                    python_cmd = "smls_env\\Scripts\\python"
-                else:
-                    python_cmd = "smls_env/bin/python"
-                subprocess.run([python_cmd, "-m", "ensurepip", "--upgrade"], check=True)
-                if verify_pip_installation():
-                    print("✅ Pip installed successfully")
-                else:
-                    print("❌ Error: Failed to install pip manually")
-                    sys.exit(1)
-            except subprocess.CalledProcessError:
-                print("❌ Error: Failed to install pip manually")
+            print("⚠️  Pip not found in virtual environment, attempting to install...")
+            if not install_pip_manually():
+                print_system_specific_help()
                 sys.exit(1)
         else:
             print("✅ Pip verified in virtual environment")
         
-    except subprocess.CalledProcessError:
+    except subprocess.CalledProcessError as e:
         print("❌ Error: Failed to create virtual environment")
+        print_system_specific_help()
         sys.exit(1)
+    print()
+
+def install_pip_manually():
+    """Attempt to install pip manually using various methods"""
+    print("   Trying to install pip using ensurepip...")
+    try:
+        # Try to install pip manually if it's missing
+        if platform.system() == "Windows":
+            python_cmd = "smls_env\\Scripts\\python"
+        else:
+            python_cmd = "smls_env/bin/python"
+        
+        subprocess.run([python_cmd, "-m", "ensurepip", "--upgrade"], 
+                      check=True, capture_output=True)
+        if verify_pip_installation():
+            print("✅ Pip installed successfully using ensurepip")
+            return True
+    except subprocess.CalledProcessError:
+        pass
+    
+    print("   Trying to install pip using get-pip.py...")
+    try:
+        # Try downloading and running get-pip.py
+        import urllib.request
+        import tempfile
+        
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+            urllib.request.urlretrieve(get_pip_url, f.name)
+            
+            if platform.system() == "Windows":
+                python_cmd = "smls_env\\Scripts\\python"
+            else:
+                python_cmd = "smls_env/bin/python"
+            
+            subprocess.run([python_cmd, f.name], check=True, capture_output=True)
+            os.unlink(f.name)  # Clean up temp file
+            
+            if verify_pip_installation():
+                print("✅ Pip installed successfully using get-pip.py")
+                return True
+    except Exception:
+        pass
+    
+    return False
+
+def print_system_specific_help():
+    """Print system-specific help for pip installation issues"""
+    print()
+    print("❌ Unable to install pip automatically. Please install it manually:")
+    print()
+    
+    system = platform.system().lower()
+    if system == "linux":
+        # Check if it's Debian/Ubuntu
+        try:
+            with open("/etc/os-release", "r") as f:
+                os_info = f.read().lower()
+                if "debian" in os_info or "ubuntu" in os_info:
+                    print("📋 For Debian/Ubuntu systems:")
+                    print("   sudo apt update")
+                    print("   sudo apt install python3-venv python3-pip")
+                    print()
+                    print("   Then recreate the virtual environment:")
+                    print("   rm -rf smls_env")
+                    print("   python3 scripts/setup.py")
+                    return
+        except FileNotFoundError:
+            pass
+        
+        print("📋 For Linux systems:")
+        print("   Install python3-venv and python3-pip using your package manager")
+        print("   Then recreate the virtual environment:")
+        print("   rm -rf smls_env")
+        print("   python3 scripts/setup.py")
+        
+    elif system == "darwin":  # macOS
+        print("📋 For macOS systems:")
+        print("   brew install python3")
+        print("   Then recreate the virtual environment:")
+        print("   rm -rf smls_env")
+        print("   python3 scripts/setup.py")
+        
+    elif system == "windows":
+        print("📋 For Windows systems:")
+        print("   Make sure Python was installed with 'Add Python to PATH' option")
+        print("   Or install pip manually from: https://pip.pypa.io/en/stable/installation/")
+        print("   Then recreate the virtual environment:")
+        print("   rmdir /s smls_env")
+        print("   python scripts/setup.py")
+    
+    else:
+        print("📋 Please install python3-venv and python3-pip for your system")
+        print("   Then recreate the virtual environment:")
+        print("   rm -rf smls_env")
+        print("   python3 scripts/setup.py")
+    
     print()
 
 def verify_pip_installation():
