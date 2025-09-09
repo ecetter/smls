@@ -65,16 +65,25 @@ echo -e "${YELLOW}🔧 Setting up Python environment and dependencies...${NC}"
 # Check if virtual environment exists
 if [ ! -d "smls_env" ]; then
     echo -e "${YELLOW}📦 Creating virtual environment...${NC}"
-    python3 -m venv smls_env
-    if [ $? -eq 0 ]; then
+    
+    # Try creating virtual environment with ensurepip
+    if python3 -m venv smls_env > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Virtual environment created${NC}"
     else
-        echo -e "${RED}❌ Failed to create virtual environment${NC}"
-        echo -e "${YELLOW}💡 Make sure python3-venv package is installed:${NC}"
-        echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
-        echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
-        echo -e "${YELLOW}   macOS: python3 -m ensurepip --upgrade${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  Standard venv creation failed, trying without ensurepip...${NC}"
+        
+        # Try creating without ensurepip
+        if python3 -m venv --without-pip smls_env > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Virtual environment created (without pip)${NC}"
+            echo -e "${YELLOW}📦 Will install pip manually after activation${NC}"
+        else
+            echo -e "${RED}❌ Failed to create virtual environment${NC}"
+            echo -e "${YELLOW}💡 Make sure python3-venv package is installed:${NC}"
+            echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
+            echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
+            echo -e "${YELLOW}   macOS: python3 -m ensurepip --upgrade${NC}"
+            exit 1
+        fi
     fi
 else
     echo -e "${GREEN}✅ Virtual environment already exists${NC}"
@@ -82,12 +91,25 @@ else
     if [ ! -f "smls_env/bin/activate" ] || [ ! -f "smls_env/bin/python" ]; then
         echo -e "${YELLOW}⚠️  Virtual environment appears corrupted, recreating...${NC}"
         rm -rf smls_env
-        python3 -m venv smls_env
-        if [ $? -eq 0 ]; then
+        
+        # Try creating virtual environment with ensurepip
+        if python3 -m venv smls_env > /dev/null 2>&1; then
             echo -e "${GREEN}✅ Virtual environment recreated${NC}"
         else
-            echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
-            exit 1
+            echo -e "${YELLOW}⚠️  Standard venv recreation failed, trying without ensurepip...${NC}"
+            
+            # Try creating without ensurepip
+            if python3 -m venv --without-pip smls_env > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ Virtual environment recreated (without pip)${NC}"
+                echo -e "${YELLOW}📦 Will install pip manually after activation${NC}"
+            else
+                echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
+                echo -e "${YELLOW}💡 Make sure python3-venv package is installed:${NC}"
+                echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
+                echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
+                echo -e "${YELLOW}   macOS: python3 -m ensurepip --upgrade${NC}"
+                exit 1
+            fi
         fi
     fi
 fi
@@ -101,23 +123,68 @@ else
     echo -e "${RED}❌ Virtual environment activation script not found${NC}"
     echo -e "${YELLOW}🔧 Recreating virtual environment...${NC}"
     rm -rf smls_env
-    python3 -m venv smls_env
-    if [ $? -eq 0 ]; then
+    
+    # Try creating virtual environment with ensurepip
+    if python3 -m venv smls_env > /dev/null 2>&1; then
         source smls_env/bin/activate
         echo -e "${GREEN}✅ Virtual environment recreated and activated${NC}"
     else
-        echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
-        exit 1
+        echo -e "${YELLOW}⚠️  Standard venv recreation failed, trying without ensurepip...${NC}"
+        
+        # Try creating without ensurepip
+        if python3 -m venv --without-pip smls_env > /dev/null 2>&1; then
+            source smls_env/bin/activate
+            echo -e "${GREEN}✅ Virtual environment recreated and activated (without pip)${NC}"
+            echo -e "${YELLOW}📦 Will install pip manually after activation${NC}"
+        else
+            echo -e "${RED}❌ Failed to recreate virtual environment${NC}"
+            echo -e "${YELLOW}💡 Make sure python3-venv package is installed:${NC}"
+            echo -e "${YELLOW}   Ubuntu/Debian: sudo apt install python3-venv${NC}"
+            echo -e "${YELLOW}   CentOS/RHEL: sudo yum install python3-venv${NC}"
+            echo -e "${YELLOW}   macOS: python3 -m ensurepip --upgrade${NC}"
+            exit 1
+        fi
     fi
 fi
 
-# Check if pip is available
+# Check if pip is available and install it robustly
 if ! python -m pip --version > /dev/null 2>&1; then
     echo -e "${YELLOW}📦 Installing pip...${NC}"
-    python -m ensurepip --upgrade
-    if ! python -m pip --version > /dev/null 2>&1; then
-        echo -e "${YELLOW}📦 Downloading and installing pip manually...${NC}"
-        curl -sSL https://bootstrap.pypa.io/get-pip.py | python
+    
+    # Try ensurepip first
+    if python -m ensurepip --upgrade > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ pip installed via ensurepip${NC}"
+    else
+        echo -e "${YELLOW}⚠️  ensurepip failed, trying alternative methods...${NC}"
+        
+        # Try wget first, then curl
+        if command -v wget > /dev/null 2>&1; then
+            echo -e "${YELLOW}📦 Downloading pip via wget...${NC}"
+            wget -q https://bootstrap.pypa.io/get-pip.py -O get-pip.py
+        elif command -v curl > /dev/null 2>&1; then
+            echo -e "${YELLOW}📦 Downloading pip via curl...${NC}"
+            curl -s https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+        else
+            echo -e "${RED}❌ Neither wget nor curl available for downloading pip${NC}"
+            echo -e "${YELLOW}💡 Please install wget or curl, or install pip manually${NC}"
+            exit 1
+        fi
+        
+        # Install pip
+        if [ -f "get-pip.py" ]; then
+            python get-pip.py
+            if [ $? -eq 0 ]; then
+                echo -e "${GREEN}✅ pip installed via get-pip.py${NC}"
+                rm -f get-pip.py
+            else
+                echo -e "${RED}❌ Failed to install pip via get-pip.py${NC}"
+                rm -f get-pip.py
+                exit 1
+            fi
+        else
+            echo -e "${RED}❌ Failed to download get-pip.py${NC}"
+            exit 1
+        fi
     fi
 fi
 
