@@ -311,19 +311,11 @@ echo -e "${CYAN}║  STEP 3: Launch SMLS                                       �
 echo -e "${CYAN}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# Check if nginx is available
+# Use direct Flask mode for maximum reliability
+# nginx can be added later if needed, but Flask mode is simpler and more reliable
 NGINX_CMD=""
-if command -v nginx &> /dev/null; then
-    NGINX_CMD="nginx"
-    echo -e "${GREEN}✅ nginx found${NC}"
-elif [ -f "$HOME/nginx/sbin/nginx" ]; then
-    NGINX_CMD="$HOME/nginx/sbin/nginx"
-    echo -e "${GREEN}✅ User nginx found${NC}"
-else
-    echo -e "${YELLOW}⚠️  nginx not found - will run in direct Flask mode${NC}"
-    echo -e "${YELLOW}   To use nginx reverse proxy, install nginx first${NC}"
-    NGINX_CMD=""
-fi
+echo -e "${GREEN}✅ Using direct Flask mode for maximum reliability${NC}"
+echo -e "${BLUE}   This is the most reliable approach for your setup${NC}"
 
 # Start nginx if available (user-level only)
 if [ -n "$NGINX_CMD" ]; then
@@ -388,9 +380,8 @@ echo -e "${GREEN}✅ Dependencies: All Python packages installed${NC}"
 echo -e "${GREEN}✅ Configuration: nginx configuration generated${NC}"
 echo -e "${GREEN}✅ SMLS: Application started and running${NC}"
 
-if [ -n "$NGINX_CMD" ]; then
-    echo -e "${GREEN}✅ Nginx: Reverse proxy running (port 8080)${NC}"
-fi
+echo -e "${GREEN}✅ Flask: Direct mode running (port 5000)${NC}"
+echo -e "${BLUE}   Access via: $BASE_URL${NC}"
 
 echo ""
 echo -e "${BLUE}🌐 Your SMLS is now available at:${NC}"
@@ -407,17 +398,12 @@ echo -e "${CYAN}   Status: ./persist/manage.sh status${NC}"
 echo -e "${CYAN}   Logs: ./persist/manage.sh logs${NC}"
 echo -e "${CYAN}   Stop: ./persist/manage.sh stop${NC}"
 
-if [ -n "$NGINX_CMD" ]; then
-    echo -e "${CYAN}   Nginx Status: ./nginx/status-user-nginx.sh${NC}"
-    echo -e "${CYAN}   Stop Nginx: ./nginx/stop-user-nginx.sh${NC}"
-fi
+echo -e "${CYAN}   Direct Flask mode - no nginx management needed${NC}"
 
 echo ""
 echo -e "${BLUE}📝 Log Locations:${NC}"
 echo -e "${CYAN}   SMLS Logs: ./persist/logs/smls_background.log${NC}"
-if [ -n "$NGINX_CMD" ]; then
-    echo -e "${CYAN}   Nginx Logs: ./nginx/logs/${NC}"
-fi
+echo -e "${CYAN}   Flask Logs: ./persist/logs/smls_background.log${NC}"
 
 echo ""
 echo -e "${YELLOW}💡 Next Steps:${NC}"
