@@ -1,76 +1,112 @@
-# Social Media Login Service (SMLS)
+# SMLS - Social Media Login Service
 
-A secure OAuth 2.0 authentication service supporting Google+ and LinkedIn login.
+A secure OAuth 2.0 authentication service supporting Google and LinkedIn login.
 
-## Quick Start
+## 🚀 Quick Start
 
-### 1. Setup
-```bash
-python scripts/setup.py
-```
-
-### 2. Launch
-```bash
-python scripts/launch.py
-```
-
-### 3. Configure OAuth
-1. Visit the setup page (URL shown after launch)
-2. Enter your Google+ and LinkedIn OAuth credentials
-3. Use the provided redirect URIs in your OAuth apps
-
-## Deployment
-
-### Option 1: Direct Flask (Development)
-**Environment Variable (Recommended)**
-```bash
-export BASE_URL=https://yourdomain.com
-python scripts/launch.py
-```
-
-**Direct Command Line**
-```bash
-python src/app.py --base-url https://yourdomain.com
-```
-
-### Option 2: Nginx Reverse Proxy (Production)
-For clean URLs without port numbers, use the nginx configuration:
+**Just 2 commands:**
 
 ```bash
-# Set your desired URL
+# 1. Set your URL
 export BASE_URL='http://yourdomain.com/your/path'
 
-# Setup nginx reverse proxy
-./nginx/setup-nginx.sh
-
-# Start SMLS with nginx
-./nginx/start-with-nginx.sh
+# 2. Run setup
+./setup-and-launch.sh
 ```
 
-This will make SMLS available at your BASE_URL instead of requiring port numbers.
+**That's it!** The script automatically:
+- ✅ Creates Python environment and installs dependencies
+- ✅ Sets up nginx configuration (clean URLs when possible)
+- ✅ Launches SMLS with reverse proxy
 
-Examples:
-- `export BASE_URL='http://emeryetter.com/sweng861/smls'`
-- `export BASE_URL='https://mydomain.com/app'`
-- `export BASE_URL='http://localhost/myapp'`
+## 📋 Examples
 
-See `nginx/NGINX-SETUP.md` for detailed nginx setup instructions.
+### Any URL Works (No Root Required)
+```bash
+export BASE_URL='http://emeryetter.com/sweng861/smls'
+./setup-and-launch.sh
+```
+**Result**: `http://emeryetter.com:8080/sweng861/smls` (script adds port automatically)
 
-### OAuth App Configuration
-- **Google+**: Use redirect URI `{BASE_URL}/auth/google/callback`
-- **LinkedIn**: Use redirect URI `{BASE_URL}/auth/linkedin/callback`
+### Simple Domain
+```bash
+export BASE_URL='http://mydomain.com'
+./setup-and-launch.sh
+```
+**Result**: `http://mydomain.com:8080` (script adds port automatically)
 
-Examples:
-- If BASE_URL is `http://emeryetter.com/sweng861/smls`:
-  - Google: `http://emeryetter.com/sweng861/smls/auth/google/callback`
-  - LinkedIn: `http://emeryetter.com/sweng861/smls/auth/linkedin/callback`
+### With Port Already Specified
+```bash
+export BASE_URL='http://localhost:8080/myapp'
+./setup-and-launch.sh
+```
+**Result**: `http://localhost:8080/myapp` (uses specified port)
 
-## Requirements
+## 🔧 Management
 
-- Python 3.8+
-- Google+ OAuth app
-- LinkedIn OAuth app
+```bash
+# Check status
+./persist/manage.sh status
 
-## License
+# View logs
+./persist/manage.sh logs
 
-MIT License
+# Stop SMLS
+./persist/manage.sh stop
+
+# Restart SMLS
+./persist/manage.sh restart
+```
+
+## 🔐 OAuth Setup
+
+After setup, update your OAuth apps with these URLs:
+
+- **Google**: `{BASE_URL}/auth/google/callback`
+- **LinkedIn**: `{BASE_URL}/auth/linkedin/callback`
+
+**Example**: If BASE_URL is `http://emeryetter.com/sweng861/smls`:
+- Google: `http://emeryetter.com/sweng861/smls/auth/google/callback`
+- LinkedIn: `http://emeryetter.com/sweng861/smls/auth/linkedin/callback`
+
+## 🆘 Troubleshooting
+
+### SMLS Won't Start
+```bash
+./persist/manage.sh logs
+```
+
+### Port Conflicts
+```bash
+lsof -i :8080  # Check port 8080
+lsof -i :5000  # Check port 5000
+```
+
+### Want Clean URLs?
+The script automatically adds port 8080 for user-level deployment. For clean URLs without ports, you'll need to set up a reverse proxy or port forwarding at the system level.
+
+## 📁 What Gets Created
+
+```
+smls/
+├── smls_env/                    # Python environment
+├── nginx/                       # Nginx configuration
+├── persist/                     # Background management
+├── logs/                        # Application logs
+└── setup-and-launch.sh         # Main setup script
+```
+
+## 💡 Tips
+
+- **No Root Required**: All URLs work without elevated privileges
+- **Automatic Ports**: Script adds port 8080 automatically
+- **Development**: Use `localhost` or `localhost:8080`
+- **Production**: Use your actual domain
+
+## 🔄 Re-running Setup
+
+The script is safe to run multiple times - it will update existing installations.
+
+---
+
+**That's it!** Simple, clean, and everything you need in one place.
