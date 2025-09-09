@@ -478,8 +478,9 @@ if __name__ == '__main__':
     # This prevents "Permission denied" errors when running without root privileges
     if not parsed_url.port:  # Only adjust if no explicit port was provided
         if parsed_url.scheme == 'https' and host != 'localhost':
-            # For HTTPS domains without explicit port, use 8443 instead of 443
-            port = 8443
+            # For HTTPS domains without explicit port, use 8080 (HTTP) for development
+            # Flask development server doesn't support HTTPS/SSL
+            port = 8080
         elif parsed_url.scheme == 'http' and host != 'localhost':
             # For HTTP domains without explicit port, use 8080 instead of 80
             port = 8080
@@ -488,8 +489,12 @@ if __name__ == '__main__':
     print(f"🌐 Starting server on {host}:{port}")
     print(f"📱 Base URL: {Config.BASE_URL}")
     
-    # Add helpful message about port usage
-    if port in [80, 443] and host != 'localhost':
+    # Add helpful messages about development vs production
+    if parsed_url.scheme == 'https':
+        print("⚠️  Note: Flask development server doesn't support HTTPS/SSL.")
+        print(f"   Access your app at: http://{host}:{port}{parsed_url.path}")
+        print("   For production HTTPS, use a reverse proxy (nginx, Apache) or WSGI server.")
+    elif port in [80, 443] and host != 'localhost':
         print("⚠️  Note: Using privileged ports (80/443) requires root privileges.")
         print("   For development, consider using ports 8080 (HTTP) or 8443 (HTTPS)")
     
