@@ -474,14 +474,23 @@ if __name__ == '__main__':
     host = parsed_url.hostname or 'localhost'
     port = parsed_url.port or 5000  # Default to 5000 if no port specified
     
-    # For HTTPS URLs without explicit port, use 443
-    if parsed_url.scheme == 'https' and not parsed_url.port:
-        port = 443
-    # For HTTP URLs without explicit port, use 80
-    elif parsed_url.scheme == 'http' and not parsed_url.port:
-        port = 80
+    # For development mode, avoid privileged ports (80, 443) unless explicitly specified
+    # This prevents "Permission denied" errors when running without root privileges
+    if not parsed_url.port:  # Only adjust if no explicit port was provided
+        if parsed_url.scheme == 'https' and host != 'localhost':
+            # For HTTPS domains without explicit port, use 8443 instead of 443
+            port = 8443
+        elif parsed_url.scheme == 'http' and host != 'localhost':
+            # For HTTP domains without explicit port, use 8080 instead of 80
+            port = 8080
+        # For localhost, keep the default 5000 regardless of scheme
     
     print(f"🌐 Starting server on {host}:{port}")
     print(f"📱 Base URL: {Config.BASE_URL}")
+    
+    # Add helpful message about port usage
+    if port in [80, 443] and host != 'localhost':
+        print("⚠️  Note: Using privileged ports (80/443) requires root privileges.")
+        print("   For development, consider using ports 8080 (HTTP) or 8443 (HTTPS)")
     
     app.run(host=host, port=port, debug=True)
