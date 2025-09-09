@@ -465,4 +465,23 @@ def proxy_alt():
         return Response(transparent_pixel, mimetype='image/png')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Parse the base URL to extract host and port
+    from urllib.parse import urlparse
+    
+    parsed_url = urlparse(Config.BASE_URL)
+    
+    # Extract host and port from the base URL
+    host = parsed_url.hostname or 'localhost'
+    port = parsed_url.port or 5000  # Default to 5000 if no port specified
+    
+    # For HTTPS URLs without explicit port, use 443
+    if parsed_url.scheme == 'https' and not parsed_url.port:
+        port = 443
+    # For HTTP URLs without explicit port, use 80
+    elif parsed_url.scheme == 'http' and not parsed_url.port:
+        port = 80
+    
+    print(f"🌐 Starting server on {host}:{port}")
+    print(f"📱 Base URL: {Config.BASE_URL}")
+    
+    app.run(host=host, port=port, debug=True)
