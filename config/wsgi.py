@@ -142,13 +142,15 @@ def add_security_headers(response):
     # Content Security Policy to prevent XSS and injection attacks
     # This policy allows:
     # - Resources from same origin ('self')
+    # - External CDNs for fonts and icons (Google Fonts, Font Awesome)
     # - Inline scripts and styles (required for some functionality)
     # - Images from same origin, data URLs, and HTTPS sources
     # - Connections to same origin only
     response.headers['Content-Security-Policy'] = (
         "default-src 'self'; "
         "script-src 'self' 'unsafe-inline'; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; "
+        "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; "
         "img-src 'self' data: https:; "
         "connect-src 'self'"
     )
