@@ -344,10 +344,10 @@ class OAuthManager:
         try:
             # Exchange authorization code for access token
             token_data = {
-                'client_id': client_id,
-                'client_secret': client_secret,
-                'code': code,
-                'grant_type': 'authorization_code',
+            'client_id': client_id,
+            'client_secret': client_secret,
+            'code': code,
+            'grant_type': 'authorization_code',
                 'redirect_uri': self.config.get_linkedin_redirect_uri()
             }
             
@@ -384,6 +384,7 @@ class OAuthManager:
             
             # Debug: Log the LinkedIn userinfo response structure
             logger.info(f"LinkedIn userinfo response: {user_info}")
+            print(f"DEBUG: LinkedIn userinfo response: {user_info}")
             
             # Validate and format user information
             if not user_info.get('sub'):  # LinkedIn uses 'sub' instead of 'id'
@@ -404,6 +405,7 @@ class OAuthManager:
                 if profile_response.status_code == 200:
                     profile_data = profile_response.json()
                     logger.info(f"LinkedIn profile picture API response: {profile_data}")
+                    print(f"DEBUG: LinkedIn profile picture API response: {profile_data}")
                     # Extract profile picture URL from LinkedIn's nested structure
                     if profile_data.get('profilePicture') and profile_data['profilePicture'].get('displayImage~'):
                         elements = profile_data['profilePicture']['displayImage~'].get('elements', [])
@@ -433,13 +435,16 @@ class OAuthManager:
             name = user_info.get('name') or user_info.get('given_name', '') + ' ' + user_info.get('family_name', '')
             email = user_info.get('email') or user_info.get('email_verified')
             
-            return {
+            result = {
                 'id': user_info.get('sub'),
                 'name': name.strip() if name else 'LinkedIn User',
                 'email': email,
                 'picture': picture_url,
                 'provider': 'linkedin'
             }
+            
+            print(f"DEBUG: LinkedIn final result: {result}")
+            return result
             
         except Exception as e:
             # Log error and re-raise for handling by calling code
