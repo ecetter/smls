@@ -65,7 +65,7 @@ def create_virtual_environment():
     print()
 
 def install_pip_manually():
-    """Attempt to install pip manually using various methods"""
+    """Attempt to install pip manually using various user-level methods"""
     print("   Trying to install pip using ensurepip...")
     try:
         # Try to install pip manually if it's missing
@@ -103,62 +103,121 @@ def install_pip_manually():
             if verify_pip_installation():
                 print("✅ Pip installed successfully using get-pip.py")
                 return True
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"   get-pip.py failed: {e}")
+    
+    print("   Trying to use system pip if available...")
+    try:
+        # Check if system pip is available and try to use it
+        system_pip_result = subprocess.run([sys.executable, "-m", "pip", "--version"], 
+                                         capture_output=True, text=True)
+        if system_pip_result.returncode == 0:
+            print("   System pip is available, trying to install pip in virtual environment...")
+            
+            if platform.system() == "Windows":
+                python_cmd = "smls_env\\Scripts\\python"
+            else:
+                python_cmd = "smls_env/bin/python"
+            
+            # Try to install pip using system pip
+            python_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+            if platform.system() == "Windows":
+                target_path = f"smls_env/Lib/site-packages"
+            else:
+                target_path = f"smls_env/lib/python{python_version}/site-packages"
+            
+            subprocess.run([sys.executable, "-m", "pip", "install", "--target", 
+                          target_path, "pip"], 
+                          check=True, capture_output=True)
+            
+            if verify_pip_installation():
+                print("✅ Pip installed successfully using system pip")
+                return True
+    except Exception as e:
+        print(f"   System pip method failed: {e}")
     
     return False
 
 def print_system_specific_help():
-    """Print system-specific help for pip installation issues"""
+    """Print system-specific help for pip installation issues (user-level solutions only)"""
     print()
-    print("❌ Unable to install pip automatically. Please install it manually:")
+    print("❌ Unable to install pip automatically. Here are user-level solutions:")
     print()
     
     system = platform.system().lower()
     if system == "linux":
-        # Check if it's Debian/Ubuntu
-        try:
-            with open("/etc/os-release", "r") as f:
-                os_info = f.read().lower()
-                if "debian" in os_info or "ubuntu" in os_info:
-                    print("📋 For Debian/Ubuntu systems:")
-                    print("   sudo apt update")
-                    print("   sudo apt install python3-venv python3-pip")
-                    print()
-                    print("   Then recreate the virtual environment:")
-                    print("   rm -rf smls_env")
-                    print("   python3 scripts/setup.py")
-                    return
-        except FileNotFoundError:
-            pass
-        
-        print("📋 For Linux systems:")
-        print("   Install python3-venv and python3-pip using your package manager")
-        print("   Then recreate the virtual environment:")
+        print("📋 For Linux systems (user-level solutions):")
+        print()
+        print("   Option 1 - Use system Python with pip:")
+        print("   • Check if pip is available: python3 -m pip --version")
+        print("   • If available, recreate environment: rm -rf smls_env && python3 scripts/setup.py")
+        print()
+        print("   Option 2 - Install Python via user package manager:")
+        print("   • Use pyenv: curl https://pyenv.run | bash")
+        print("   • Or use conda/miniconda: https://docs.conda.io/en/latest/miniconda.html")
+        print()
+        print("   Option 3 - Use alternative Python installation:")
+        print("   • Download Python from python.org and install in user directory")
+        print("   • Or use your system's package manager if you have access")
+        print()
+        print("   After installing Python with pip, recreate the environment:")
         print("   rm -rf smls_env")
         print("   python3 scripts/setup.py")
         
     elif system == "darwin":  # macOS
-        print("📋 For macOS systems:")
-        print("   brew install python3")
-        print("   Then recreate the virtual environment:")
+        print("📋 For macOS systems (user-level solutions):")
+        print()
+        print("   Option 1 - Use Homebrew (if available):")
+        print("   • brew install python3")
+        print("   • Then: rm -rf smls_env && python3 scripts/setup.py")
+        print()
+        print("   Option 2 - Use pyenv:")
+        print("   • curl https://pyenv.run | bash")
+        print("   • pyenv install 3.10.12")
+        print("   • pyenv global 3.10.12")
+        print()
+        print("   Option 3 - Download from python.org:")
+        print("   • Download Python installer from https://python.org")
+        print("   • Install in user directory")
+        print()
+        print("   After installing Python with pip, recreate the environment:")
         print("   rm -rf smls_env")
         print("   python3 scripts/setup.py")
         
     elif system == "windows":
-        print("📋 For Windows systems:")
-        print("   Make sure Python was installed with 'Add Python to PATH' option")
-        print("   Or install pip manually from: https://pip.pypa.io/en/stable/installation/")
-        print("   Then recreate the virtual environment:")
+        print("📋 For Windows systems (user-level solutions):")
+        print()
+        print("   Option 1 - Use Microsoft Store Python:")
+        print("   • Install Python from Microsoft Store (includes pip)")
+        print("   • Then: rmdir /s smls_env && python scripts/setup.py")
+        print()
+        print("   Option 2 - Download from python.org:")
+        print("   • Download Python installer from https://python.org")
+        print("   • Make sure to check 'Add Python to PATH' during installation")
+        print()
+        print("   Option 3 - Use conda/miniconda:")
+        print("   • Download from https://docs.conda.io/en/latest/miniconda.html")
+        print("   • Install in user directory")
+        print()
+        print("   After installing Python with pip, recreate the environment:")
         print("   rmdir /s smls_env")
         print("   python scripts/setup.py")
     
     else:
-        print("📋 Please install python3-venv and python3-pip for your system")
-        print("   Then recreate the virtual environment:")
+        print("📋 For other systems (user-level solutions):")
+        print()
+        print("   • Install Python with pip using your preferred method")
+        print("   • Use pyenv, conda, or download from python.org")
+        print("   • Ensure pip is available: python3 -m pip --version")
+        print()
+        print("   After installing Python with pip, recreate the environment:")
         print("   rm -rf smls_env")
         print("   python3 scripts/setup.py")
     
+    print()
+    print("💡 Tip: The setup script will automatically try to install pip using")
+    print("   get-pip.py if ensurepip is not available, so you may not need")
+    print("   to install anything manually.")
     print()
 
 def verify_pip_installation():
