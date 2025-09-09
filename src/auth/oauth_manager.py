@@ -305,7 +305,7 @@ class OAuthManager:
         params = {
             'client_id': client_id,
             'redirect_uri': redirect_uri,
-            'scope': 'openid profile email',  # Request access to user's basic profile
+            'scope': 'openid profile email',  # Request access to user's basic profile and email
             'response_type': 'code',  # Authorization code flow
             'state': state,  # CSRF protection
             'code_challenge': code_challenge,  # PKCE challenge
@@ -382,12 +382,45 @@ class OAuthManager:
             if not user_info.get('sub'):  # LinkedIn uses 'sub' instead of 'id'
                 raise Exception("Invalid user information received from LinkedIn")
             
+            # Get profile picture from LinkedIn (requires separate API call)
+            picture_url = None
+            try:
+                # LinkedIn requires a separate request for profile picture using the correct endpoint
+                profile_response = requests.get(
+                    'https://api.linkedin.com/v2/people/~:(profilePicture(displayImage~:playableStreams))',
+                    headers={
+                        'Authorization': f'Bearer {access_token}',
+                        'X-Restli-Protocol-Version': '2.0.0'
+                    }
+                )
+                
+                if profile_response.status_code == 200:
+                    profile_data = profile_response.json()
+                    # Extract profile picture URL from LinkedIn's nested structure
+                    if profile_data.get('profilePicture') and profile_data['profilePicture'].get('displayImage~'):
+                        elements = profile_data['profilePicture']['displayImage~'].get('elements', [])
+                        if elements and len(elements) > 0:
+                            # Get the largest available image
+                            largest_image = max(elements, key=lambda x: x.get('data', {}).get('com.linkedin.digitalmedia.mediaartifact.StillImage', {}).get('storageSize', {}).get('width', 0))
+                            if largest_image.get('identifiers'):
+                                picture_url = largest_image['identifiers'][0].get('identifier')
+                else:
+                    # If the profile picture request fails, try a simpler approach
+                    # Some LinkedIn users might have profile pictures in the userinfo response
+                    if user_info.get('picture'):
+                        picture_url = user_info.get('picture')
+            except Exception as e:
+                # If profile picture request fails, continue without it
+                # Try to get picture from userinfo response as fallback
+                if user_info.get('picture'):
+                    picture_url = user_info.get('picture')
+            
             # Return formatted user information
             return {
                 'id': user_info.get('sub'),
                 'name': user_info.get('name'),
                 'email': user_info.get('email'),
-                'picture': user_info.get('picture'),
+                'picture': picture_url,
                 'provider': 'linkedin'
             }
             
