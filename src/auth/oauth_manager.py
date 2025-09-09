@@ -31,8 +31,12 @@ import requests
 import secrets
 import hashlib
 import base64
+import logging
 from urllib.parse import urlencode, parse_qs
 from .config import Config
+
+# Configure logger for OAuth operations
+logger = logging.getLogger(__name__)
 
 class OAuthManager:
     """
