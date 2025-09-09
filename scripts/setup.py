@@ -84,27 +84,48 @@ def install_pip_manually():
     
     print("   Trying to install pip using get-pip.py...")
     try:
-        # Try downloading and running get-pip.py
-        import urllib.request
-        import tempfile
+        # Download get-pip.py directly into the smls_env directory
+        get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
+        get_pip_path = "smls_env/get-pip.py"
         
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            get_pip_url = "https://bootstrap.pypa.io/get-pip.py"
-            urllib.request.urlretrieve(get_pip_url, f.name)
-            
-            if platform.system() == "Windows":
-                python_cmd = "smls_env\\Scripts\\python"
+        # Use wget to download get-pip.py
+        wget_result = subprocess.run(["wget", "-O", get_pip_path, get_pip_url], 
+                                   capture_output=True, text=True)
+        if wget_result.returncode != 0:
+            print(f"   wget failed: {wget_result.stderr}")
+            # Fallback to curl if wget is not available
+            curl_result = subprocess.run(["curl", "-o", get_pip_path, get_pip_url], 
+                                       capture_output=True, text=True)
+            if curl_result.returncode != 0:
+                print(f"   curl also failed: {curl_result.stderr}")
+                raise Exception("Both wget and curl failed to download get-pip.py")
             else:
-                python_cmd = "smls_env/bin/python"
-            
-            subprocess.run([python_cmd, f.name], check=True, capture_output=True)
-            os.unlink(f.name)  # Clean up temp file
-            
-            if verify_pip_installation():
-                print("✅ Pip installed successfully using get-pip.py")
-                return True
+                print("   Downloaded get-pip.py using curl")
+        else:
+            print("   Downloaded get-pip.py using wget")
+        
+        # Run get-pip.py with the virtual environment's Python
+        if platform.system() == "Windows":
+            python_cmd = "smls_env\\Scripts\\python"
+        else:
+            python_cmd = "smls_env/bin/python"
+        
+        subprocess.run([python_cmd, get_pip_path], check=True, capture_output=True)
+        
+        # Clean up the downloaded file
+        os.unlink(get_pip_path)
+        
+        if verify_pip_installation():
+            print("✅ Pip installed successfully using get-pip.py")
+            return True
     except Exception as e:
         print(f"   get-pip.py failed: {e}")
+        # Clean up get-pip.py if it exists
+        try:
+            if os.path.exists("smls_env/get-pip.py"):
+                os.unlink("smls_env/get-pip.py")
+        except:
+            pass
     
     print("   Trying to use system pip if available...")
     try:
@@ -236,12 +257,6 @@ def verify_pip_installation():
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
 
-def get_activation_command():
-    """Get the activation command based on the platform"""
-    if platform.system() == "Windows":
-        return "smls_env\\Scripts\\activate"
-    else:
-        return "source smls_env/bin/activate"
 
 def install_dependencies():
     """Install required dependencies"""
@@ -292,20 +307,23 @@ def create_directories():
 
 def print_completion_message():
     """Print the completion message"""
-    activation_cmd = get_activation_command()
-    
     print("🎉 Setup completed successfully!")
     print()
     print("Next steps:")
-    print("1. Activate the virtual environment:")
-    print(f"   {activation_cmd}")
+    print("1. Launch the application:")
+    if platform.system() == "Windows":
+        print("   launch.bat")
+        print("   OR: python scripts/launch.py")
+    else:
+        print("   ./launch.sh")
+        print("   OR: python3 scripts/launch.py")
     print()
-    print("2. Run the application:")
-    print("   python src/app.py")
+    print("2. Open your browser and go to the URL shown when you launch the app")
     print()
-    print("3. Open your browser and go to the URL shown when you launch the app")
+    print("3. Configure your OAuth credentials in the setup page")
     print()
-    print("4. Configure your OAuth credentials in the setup page")
+    print("💡 The launch script automatically handles the virtual environment")
+    print("   activation, so you don't need to activate it manually.")
     print()
     print("📚 For more information, see the README.md file")
     print("=" * 60)
