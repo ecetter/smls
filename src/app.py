@@ -58,19 +58,20 @@ oauth_manager = OAuthManager()
 
 # Add URL prefix for subpath deployment
 if application_prefix:
-    from werkzeug.middleware.dispatcher import DispatcherMiddleware
-    from werkzeug.wrappers import Response
+    class PrefixMiddleware:
+        def __init__(self, app, prefix):
+            self.app = app
+            self.prefix = prefix
+        
+        def __call__(self, environ, start_response):
+            # Remove the prefix from PATH_INFO
+            if environ['PATH_INFO'].startswith(self.prefix):
+                environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+                if not environ['PATH_INFO']:
+                    environ['PATH_INFO'] = '/'
+            return self.app(environ, start_response)
     
-    # Create a simple wrapper to handle the prefix
-    def prefix_middleware(environ, start_response):
-        # Remove the prefix from PATH_INFO
-        if environ['PATH_INFO'].startswith(application_prefix):
-            environ['PATH_INFO'] = environ['PATH_INFO'][len(application_prefix):]
-            if not environ['PATH_INFO']:
-                environ['PATH_INFO'] = '/'
-        return app(environ, start_response)
-    
-    app.wsgi_app = prefix_middleware
+    app.wsgi_app = PrefixMiddleware(app.wsgi_app, application_prefix)
 
 @app.route('/')
 def index():
