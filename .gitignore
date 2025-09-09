@@ -78,6 +78,7 @@ nginx/nginx.pid
 nginx/logs/
 nginx/access.log
 nginx/error.log
+nginx/nginx_startup.log
 
 # Process ID files
 *.pid

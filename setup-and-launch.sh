@@ -221,6 +221,20 @@ fi
 # If user wants clean URLs, they can use a reverse proxy or port forwarding
 DEPLOYMENT_TYPE="user-level"
 
+# Function to find an available port
+find_available_port() {
+    local start_port=$1
+    local port=$start_port
+    while [ $port -lt $((start_port + 100)) ]; do
+        if ! netstat -ln 2>/dev/null | grep -q ":$port "; then
+            echo $port
+            return 0
+        fi
+        port=$((port + 1))
+    done
+    echo $start_port  # Fallback to original port
+}
+
 # Determine the port to use
 if [[ "$DOMAIN" == *":8080" ]] || [[ "$DOMAIN" == *":8443" ]]; then
     # User specified a port
@@ -236,21 +250,25 @@ elif [[ "$DOMAIN" == *":80" ]] || [[ "$DOMAIN" == *":443" ]]; then
     fi
     echo -e "${BLUE}   Updated BASE_URL: $BASE_URL${NC}"
 else
-    # No port specified - add port 8080 for user-level
-    echo -e "${BLUE}🔧 Adding port 8080 for user-level access${NC}"
-    # Add port 8080 to BASE_URL
+    # No port specified - find available port for user-level
+    echo -e "${BLUE}🔧 Finding available port for user-level access${NC}"
+    AVAILABLE_PORT=$(find_available_port 8080)
+    
+    # Add available port to BASE_URL
     if [[ "$BASE_URL" == http://* ]]; then
         # Remove http:// prefix
         URL_WITHOUT_PROTOCOL="${BASE_URL#http://}"
-        # Add port 8080
-        BASE_URL="http://${URL_WITHOUT_PROTOCOL%%/*}:8080/${URL_WITHOUT_PROTOCOL#*/}"
+        # Add available port
+        BASE_URL="http://${URL_WITHOUT_PROTOCOL%%/*}:$AVAILABLE_PORT/${URL_WITHOUT_PROTOCOL#*/}"
     elif [[ "$BASE_URL" == https://* ]]; then
         # Remove https:// prefix
         URL_WITHOUT_PROTOCOL="${BASE_URL#https://}"
-        # Add port 8443
-        BASE_URL="https://${URL_WITHOUT_PROTOCOL%%/*}:8443/${URL_WITHOUT_PROTOCOL#*/}"
+        # Add available port (use 8443 for HTTPS)
+        HTTPS_PORT=$(find_available_port 8443)
+        BASE_URL="https://${URL_WITHOUT_PROTOCOL%%/*}:$HTTPS_PORT/${URL_WITHOUT_PROTOCOL#*/}"
     fi
     echo -e "${BLUE}   Updated BASE_URL: $BASE_URL${NC}"
+    echo -e "${BLUE}   Using port $AVAILABLE_PORT for nginx, port 5000 for Flask${NC}"
 fi
 
 echo -e "${BLUE}   Domain: $DOMAIN${NC}"
@@ -319,13 +337,16 @@ if [ -n "$NGINX_CMD" ]; then
     fi
     
     # Start nginx in user mode
-    $NGINX_CMD -c "$SMLS_DIR/nginx/nginx-smls-generated.conf" -p "$SMLS_DIR/nginx" &
-    sleep 2
+    $NGINX_CMD -c "$SMLS_DIR/nginx/nginx-smls-generated.conf" -p "$SMLS_DIR/nginx" > nginx/nginx_startup.log 2>&1 &
+    sleep 3
     
     if [ -f "nginx/nginx.pid" ] && kill -0 "$(cat nginx/nginx.pid)" 2>/dev/null; then
         echo -e "${GREEN}✅ nginx started successfully${NC}"
     else
         echo -e "${YELLOW}⚠️  nginx failed to start, continuing with direct Flask mode${NC}"
+        if [ -f "nginx/nginx_startup.log" ]; then
+            echo -e "${YELLOW}   nginx error: $(head -1 nginx/nginx_startup.log)${NC}"
+        fi
         NGINX_CMD=""
     fi
 fi
