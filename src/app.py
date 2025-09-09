@@ -64,15 +64,22 @@ if application_prefix:
             self.prefix = prefix
         
         def __call__(self, environ, start_response):
-            # Don't strip prefix for static files - they need the full path
-            if environ['PATH_INFO'].startswith(f'{self.prefix}/static/'):
-                # For static files, just remove the prefix from the path
-                environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
-            elif environ['PATH_INFO'].startswith(self.prefix):
+            original_path = environ['PATH_INFO']
+            
+            # Handle static files and other requests
+            if original_path.startswith(f'{self.prefix}/static/'):
+                # For static files, remove the prefix
+                environ['PATH_INFO'] = original_path[len(self.prefix):]
+            elif original_path.startswith(self.prefix):
                 # For other requests, remove the prefix
-                environ['PATH_INFO'] = environ['PATH_INFO'][len(self.prefix):]
+                environ['PATH_INFO'] = original_path[len(self.prefix):]
                 if not environ['PATH_INFO']:
                     environ['PATH_INFO'] = '/'
+            
+            # Debug logging
+            if original_path != environ['PATH_INFO']:
+                print(f"🔧 Middleware: {original_path} → {environ['PATH_INFO']}")
+            
             return self.app(environ, start_response)
     
     app.wsgi_app = PrefixMiddleware(app.wsgi_app, application_prefix)
@@ -81,6 +88,13 @@ if application_prefix:
 def index():
     """Main login page."""
     return render_template('index.html')
+
+# Add explicit static file route for debugging
+@app.route('/static/<path:filename>')
+def static_files(filename):
+    """Explicit static file handler for debugging."""
+    from flask import send_from_directory
+    return send_from_directory('static', filename)
 
 @app.route('/setup')
 def setup_credentials():
