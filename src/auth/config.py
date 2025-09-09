@@ -37,11 +37,15 @@ class Config:
     # Default redirect URIs
     @classmethod
     def get_google_redirect_uri(cls):
-        return f"{cls.BASE_URL}/auth/google/callback"
+        # Use runtime base URL if available (for development), otherwise use BASE_URL
+        base_url = getattr(cls, 'RUNTIME_BASE_URL', cls.BASE_URL)
+        return f"{base_url}/auth/google/callback"
     
     @classmethod
     def get_linkedin_redirect_uri(cls):
-        return f"{cls.BASE_URL}/auth/linkedin/callback"
+        # Use runtime base URL if available (for development), otherwise use BASE_URL
+        base_url = getattr(cls, 'RUNTIME_BASE_URL', cls.BASE_URL)
+        return f"{base_url}/auth/linkedin/callback"
     
     @classmethod
     def get_oauth_config(cls, provider):

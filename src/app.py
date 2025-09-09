@@ -21,6 +21,34 @@ args = parser.parse_args()
 # Set the base URL in the config
 Config.BASE_URL = args.base_url
 
+# Create a runtime base URL for OAuth callbacks that matches the actual server
+def get_runtime_base_url():
+    """Get the actual runtime base URL for OAuth callbacks."""
+    from urllib.parse import urlparse
+    parsed_url = urlparse(Config.BASE_URL)
+    
+    # Use HTTP for development (Flask doesn't support HTTPS)
+    if parsed_url.scheme == 'https':
+        scheme = 'http'
+    else:
+        scheme = parsed_url.scheme
+    
+    # Use the development port
+    if not parsed_url.port:
+        if scheme == 'https':
+            port = 8080  # Development port
+        else:
+            port = 8080  # Development port
+    else:
+        port = parsed_url.port
+    
+    # Reconstruct the URL with the correct scheme and port
+    runtime_url = f"{scheme}://{parsed_url.hostname}:{port}{parsed_url.path}"
+    return runtime_url
+
+# Set the runtime base URL for OAuth callbacks
+Config.RUNTIME_BASE_URL = get_runtime_base_url()
+
 # Extract application prefix from base URL for subpath deployment
 from urllib.parse import urlparse
 parsed_base_url = urlparse(Config.BASE_URL)
@@ -546,6 +574,12 @@ if __name__ == '__main__':
     if application_prefix:
         print(f"📁 Application prefix: {application_prefix}")
         print(f"   Routes will be available under: {application_prefix}/")
+    
+    # Show OAuth redirect URIs
+    print(f"🔐 OAuth redirect URIs:")
+    print(f"   Google: {Config.get_google_redirect_uri()}")
+    print(f"   LinkedIn: {Config.get_linkedin_redirect_uri()}")
+    print(f"   ⚠️  Make sure these URLs are configured in your OAuth apps!")
     
     # Configure Flask to prevent thread exhaustion
     app.run(host=host, port=port, debug=True, threaded=True, use_reloader=False)
