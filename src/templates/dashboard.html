@@ -13,14 +13,6 @@
         </p>
     </div>
     
-    <!-- Debug Section (temporary) -->
-    <div class="debug-section" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px;">
-        <h3>Debug Info:</h3>
-        <p><strong>User Data:</strong> {{ user|tojson }}</p>
-        <p><strong>Picture URL:</strong> {{ user.picture or 'No picture URL' }}</p>
-        <p><strong>Provider:</strong> {{ user.provider }}</p>
-    </div>
-    
     <div class="dashboard-grid">
         <!-- Profile Card -->
         <div class="profile-card card">
@@ -28,12 +20,10 @@
                 <div class="profile-picture-container">
                     {% if user.picture %}
                         {% if user.provider == 'linkedin' %}
-                            {% set image_url = '/image-proxy/' + user.picture|urlencode %}
+                            <img src="{{ user.picture }}" alt="Profile Picture" class="profile-picture" referrerpolicy="no-referrer">
                         {% else %}
-                            {% set image_url = user.picture %}
+                            <img src="{{ user.picture }}" alt="Profile Picture" class="profile-picture">
                         {% endif %}
-                        
-                        <img src="{{ image_url }}" alt="Profile Picture" class="profile-picture">
                     {% else %}
                         <div class="profile-picture-placeholder">
                             <i class="fas fa-user"></i>
