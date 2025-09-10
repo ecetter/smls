@@ -541,54 +541,53 @@ def api_user():
 
 @app.route('/image-proxy/<path:image_url>')
 def image_proxy(image_url):
-    """Simple image proxy for LinkedIn profile pictures."""
+    """Enhanced image proxy for LinkedIn profile pictures with ad blocker bypass."""
     try:
         import urllib.parse
         decoded_url = urllib.parse.unquote(image_url)
         
-        # Simple headers that work
+        # Enhanced headers to bypass ad blockers
         headers = {
-            'User-Agent': 'Mozilla/5.0 (compatible; SMLS/1.0)',
-            'Accept': '*/*'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.linkedin.com/',
+            'Sec-Fetch-Dest': 'image',
+            'Sec-Fetch-Mode': 'no-cors',
+            'Sec-Fetch-Site': 'cross-site',
+            'Cache-Control': 'no-cache'
         }
         
-        # Fetch with minimal timeout
-        response = requests.get(decoded_url, headers=headers, timeout=5, stream=True)
+        # Fetch with enhanced timeout and error handling
+        response = requests.get(decoded_url, headers=headers, timeout=10, stream=True)
         response.raise_for_status()
         
-        # Return the image data directly
+        # Determine content type from response
+        content_type = response.headers.get('content-type', 'image/jpeg')
+        
+        # Return the image data with proper headers
         from flask import Response
         return Response(
             response.iter_content(chunk_size=8192),
-            mimetype='image/jpeg',
+            mimetype=content_type,
             headers={
-                'Cache-Control': 'public, max-age=3600'
+                'Cache-Control': 'public, max-age=3600',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET',
+                'Access-Control-Allow-Headers': 'Content-Type'
             }
         )
         
     except Exception as e:
-        # Return a simple 1x1 pixel
+        # Return a simple 1x1 pixel with proper headers
         from flask import Response
         pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
-        return Response(pixel_data, mimetype='image/png')
+        return Response(pixel_data, mimetype='image/png', headers={
+            'Cache-Control': 'public, max-age=300'
+        })
 
 
-@app.route('/test-linkedin-display')
-def test_linkedin_display():
-    """Test endpoint to verify LinkedIn profile picture display works locally."""
-    from flask import render_template, make_response
-    # Simulate a successful LinkedIn authentication with profile picture
-    test_user = {
-        'id': 'test_linkedin_12345',
-        'name': 'Test LinkedIn User',
-        'email': 'test.user@linkedin.com',
-        'picture': 'https://via.placeholder.com/150/0077B5/FFFFFF?text=LI',
-        'provider': 'linkedin'
-    }
-    response = make_response(render_template('dashboard.html', user=test_user))
-    # Temporarily disable CSP for testing
-    response.headers['Content-Security-Policy'] = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob:;"
-    return response
 
 @app.route('/proxy')
 def proxy_alt():
