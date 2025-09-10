@@ -561,7 +561,11 @@ def image_proxy(image_url):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
         
+        logger.error(f"DEBUG: Image proxy fetching URL: {decoded_url}")
         response = requests.get(decoded_url, headers=headers, timeout=10)
+        logger.error(f"DEBUG: Image proxy response status: {response.status_code}")
+        logger.error(f"DEBUG: Image proxy response content length: {len(response.content)}")
+        logger.error(f"DEBUG: Image proxy response content preview: {response.content[:100]}")
         response.raise_for_status()
         
         # Return the image with simple response handling

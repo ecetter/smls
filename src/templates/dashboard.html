@@ -13,6 +13,14 @@
         </p>
     </div>
     
+    <!-- Debug Section (temporary) -->
+    <div class="debug-section" style="background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; font-size: 12px;">
+        <h3>Debug Info:</h3>
+        <p><strong>User Data:</strong> {{ user|tojson }}</p>
+        <p><strong>Picture URL:</strong> {{ user.picture or 'No picture URL' }}</p>
+        <p><strong>Provider:</strong> {{ user.provider }}</p>
+    </div>
+    
     <div class="dashboard-grid">
         <!-- Profile Card -->
         <div class="profile-card card">
