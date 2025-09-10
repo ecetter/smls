@@ -541,51 +541,36 @@ def api_user():
 
 @app.route('/image-proxy/<path:image_url>')
 def image_proxy(image_url):
-    """Enhanced image proxy for LinkedIn profile pictures with ad blocker bypass."""
+    """Simple image proxy for LinkedIn profile pictures."""
     try:
         import urllib.parse
         decoded_url = urllib.parse.unquote(image_url)
         
-        # Enhanced headers to bypass ad blockers
+        # Simple headers that work
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': 'https://www.linkedin.com/',
-            'Sec-Fetch-Dest': 'image',
-            'Sec-Fetch-Mode': 'no-cors',
-            'Sec-Fetch-Site': 'cross-site',
-            'Cache-Control': 'no-cache'
+            'User-Agent': 'Mozilla/5.0 (compatible; SMLS/1.0)',
+            'Accept': '*/*'
         }
         
-        # Fetch with enhanced timeout and error handling
-        response = requests.get(decoded_url, headers=headers, timeout=10, stream=True)
+        # Fetch with minimal timeout
+        response = requests.get(decoded_url, headers=headers, timeout=5, stream=True)
         response.raise_for_status()
         
-        # Determine content type from response
-        content_type = response.headers.get('content-type', 'image/jpeg')
-        
-        # Return the image data with proper headers
+        # Return the image data directly
         from flask import Response
         return Response(
             response.iter_content(chunk_size=8192),
-            mimetype=content_type,
+            mimetype='image/jpeg',
             headers={
-                'Cache-Control': 'public, max-age=3600',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'GET',
-                'Access-Control-Allow-Headers': 'Content-Type'
+                'Cache-Control': 'public, max-age=3600'
             }
         )
         
     except Exception as e:
-        # Return a simple 1x1 pixel with proper headers
+        # Return a simple 1x1 pixel
         from flask import Response
         pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
-        return Response(pixel_data, mimetype='image/png', headers={
-            'Cache-Control': 'public, max-age=300'
-        })
+        return Response(pixel_data, mimetype='image/png')
 
 
 
