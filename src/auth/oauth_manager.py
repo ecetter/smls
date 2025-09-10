@@ -401,8 +401,10 @@ class OAuthManager:
             
             # Get profile picture from LinkedIn (requires separate API call)
             picture_url = None
+            print("DEBUG: Starting LinkedIn profile picture request")
             try:
                 # LinkedIn requires a separate request for profile picture using the correct endpoint
+                print("DEBUG: Making LinkedIn profile picture API request")
                 profile_response = requests.get(
                     'https://api.linkedin.com/v2/people/~:(profilePicture(displayImage~:playableStreams))',
                     headers={
@@ -410,6 +412,7 @@ class OAuthManager:
                         'X-Restli-Protocol-Version': '2.0.0'
                     }
                 )
+                print(f"DEBUG: LinkedIn profile picture API response status: {profile_response.status_code}")
                 
                 if profile_response.status_code == 200:
                     profile_data = profile_response.json()
