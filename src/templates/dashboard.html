@@ -19,11 +19,7 @@
             <div class="profile-header">
                 <div class="profile-picture-container">
                     {% if user.picture %}
-                        {% if user.provider == 'linkedin' %}
-                            <img src="/image-proxy/{{ user.picture|urlencode }}" alt="Profile Picture" class="profile-picture">
-                        {% else %}
-                            <img src="{{ user.picture }}" alt="Profile Picture" class="profile-picture">
-                        {% endif %}
+                        <img src="{{ user.picture }}" alt="Profile Picture" class="profile-picture" crossorigin="anonymous">
                     {% else %}
                         <div class="profile-picture-placeholder">
                             <i class="fas fa-user"></i>

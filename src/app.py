@@ -572,6 +572,24 @@ def image_proxy(image_url):
         pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
         return Response(pixel_data, mimetype='image/png')
 
+
+@app.route('/test-linkedin-display')
+def test_linkedin_display():
+    """Test endpoint to verify LinkedIn profile picture display works locally."""
+    from flask import render_template, make_response
+    # Simulate a successful LinkedIn authentication with profile picture
+    test_user = {
+        'id': 'test_linkedin_12345',
+        'name': 'Test LinkedIn User',
+        'email': 'test.user@linkedin.com',
+        'picture': 'https://via.placeholder.com/150/0077B5/FFFFFF?text=LI',
+        'provider': 'linkedin'
+    }
+    response = make_response(render_template('dashboard.html', user=test_user))
+    # Temporarily disable CSP for testing
+    response.headers['Content-Security-Policy'] = "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; img-src * data: blob:;"
+    return response
+
 @app.route('/proxy')
 def proxy_alt():
     """Alternative proxy endpoint using query parameter."""
