@@ -541,53 +541,36 @@ def api_user():
 
 @app.route('/image-proxy/<path:image_url>')
 def image_proxy(image_url):
-    """Proxy endpoint to serve images that have CORS restrictions."""
+    """Simple image proxy for LinkedIn profile pictures."""
     try:
-        # Decode the URL
         import urllib.parse
         decoded_url = urllib.parse.unquote(image_url)
         
-        # Handle data URIs - don't try to fetch them
-        if decoded_url.startswith('data:'):
-            from flask import Response
-            return Response("Data URIs don't need proxying", status=400, mimetype='text/plain')
-        
-        # Add protocol if missing
-        if not decoded_url.startswith(('http://', 'https://')):
-            decoded_url = 'https://' + decoded_url
-        
-        # Fetch the image with proper headers for LinkedIn
+        # Simple headers that work
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
-            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': 'https://www.linkedin.com/',
-            'Sec-Fetch-Dest': 'image',
-            'Sec-Fetch-Mode': 'no-cors',
-            'Sec-Fetch-Site': 'cross-site'
+            'User-Agent': 'Mozilla/5.0 (compatible; SMLS/1.0)',
+            'Accept': '*/*'
         }
         
-        logger.error(f"DEBUG: Image proxy fetching URL: {decoded_url}")
-        response = requests.get(decoded_url, headers=headers, timeout=10)
-        logger.error(f"DEBUG: Image proxy response status: {response.status_code}")
-        logger.error(f"DEBUG: Image proxy response content length: {len(response.content)}")
-        logger.error(f"DEBUG: Image proxy response content preview: {response.content[:100]}")
+        # Fetch with minimal timeout
+        response = requests.get(decoded_url, headers=headers, timeout=5, stream=True)
         response.raise_for_status()
         
-        # Return the image with proper content type
+        # Return the image data directly
         from flask import Response
-        content_type = response.headers.get('content-type', 'image/jpeg')
         return Response(
-            response.content,
-            mimetype=content_type
+            response.iter_content(chunk_size=8192),
+            mimetype='image/jpeg',
+            headers={
+                'Cache-Control': 'public, max-age=3600'
+            }
         )
         
     except Exception as e:
-        # Return a 1x1 transparent pixel as fallback
+        # Return a simple 1x1 pixel
         from flask import Response
-        transparent_pixel = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
-        return Response(transparent_pixel, mimetype='image/png')
+        pixel_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xdb\x00\x00\x00\x00IEND\xaeB`\x82'
+        return Response(pixel_data, mimetype='image/png')
 
 @app.route('/proxy')
 def proxy_alt():
