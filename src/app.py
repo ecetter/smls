@@ -556,9 +556,16 @@ def image_proxy(image_url):
         if not decoded_url.startswith(('http://', 'https://')):
             decoded_url = 'https://' + decoded_url
         
-        # Fetch the image
+        # Fetch the image with proper headers for LinkedIn
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Referer': 'https://www.linkedin.com/',
+            'Sec-Fetch-Dest': 'image',
+            'Sec-Fetch-Mode': 'no-cors',
+            'Sec-Fetch-Site': 'cross-site'
         }
         
         logger.error(f"DEBUG: Image proxy fetching URL: {decoded_url}")
@@ -568,11 +575,12 @@ def image_proxy(image_url):
         logger.error(f"DEBUG: Image proxy response content preview: {response.content[:100]}")
         response.raise_for_status()
         
-        # Return the image with simple response handling
+        # Return the image with proper content type
         from flask import Response
+        content_type = response.headers.get('content-type', 'image/jpeg')
         return Response(
             response.content,
-            mimetype='image/png'  # Use simple mimetype like the working minimal test
+            mimetype=content_type
         )
         
     except Exception as e:
